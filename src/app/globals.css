@@ -1,0 +1,266 @@
+@import "tailwindcss";
+
+:root {
+  /* ---- Neutrals (cool slate-gray — enterprise ops software, not startup) ---- */
+  --gray-25: #fbfcfd;
+  --gray-50: #f7f8fa;
+  --gray-100: #eef0f3;
+  --gray-200: #dfe2e8;
+  --gray-300: #c5cad3;
+  --gray-400: #9aa2b1;
+  --gray-500: #6b7385;
+  --gray-600: #4d5566;
+  --gray-700: #363c4a;
+  --gray-800: #232733;
+  --gray-900: #14161d;
+  --gray-950: #0b0c11;
+
+  /* ---- Brand accent: confident, desaturated blue ---- */
+  --accent-50: #eef5ff;
+  --accent-100: #dbeafe;
+  --accent-200: #b4d4fb;
+  --accent-500: #1c6fd6;
+  --accent-600: #145bb8;
+  --accent-700: #114a96;
+
+  /* ---- Semantic status colors ---- */
+  --success-50: #ecfdf3;
+  --success-500: #16a34a;
+  --success-600: #15803d;
+  --warning-50: #fffbeb;
+  --warning-500: #d97706;
+  --warning-600: #b45309;
+  --danger-50: #fef2f2;
+  --danger-500: #dc2626;
+  --danger-600: #b91c1c;
+
+  /* ---- Base ---- */
+  --background: var(--gray-50);
+  --surface: #ffffff;
+  --foreground: var(--gray-900);
+  --foreground-muted: var(--gray-500);
+  --border: var(--gray-200);
+  --border-strong: var(--gray-300);
+
+  /* ---- Spacing scale (4px base) ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ---- Radius: small and consistent ---- */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* ---- Shadows: subtle, functional ---- */
+  --shadow-xs: 0 1px 2px 0 rgb(20 22 29 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(20 22 29 / 0.08), 0 1px 2px -1px rgb(20 22 29 / 0.06);
+  --shadow-md: 0 4px 8px -2px rgb(20 22 29 / 0.08), 0 2px 4px -2px rgb(20 22 29 / 0.05);
+  --shadow-lg: 0 12px 24px -6px rgb(20 22 29 / 0.10), 0 4px 8px -4px rgb(20 22 29 / 0.06);
+
+  color-scheme: light;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-gray-25: var(--gray-25);
+  --color-gray-50: var(--gray-50);
+  --color-gray-100: var(--gray-100);
+  --color-gray-200: var(--gray-200);
+  --color-gray-300: var(--gray-300);
+  --color-gray-400: var(--gray-400);
+  --color-gray-500: var(--gray-500);
+  --color-gray-600: var(--gray-600);
+  --color-gray-700: var(--gray-700);
+  --color-gray-800: var(--gray-800);
+  --color-gray-900: var(--gray-900);
+  --color-gray-950: var(--gray-950);
+
+  --color-accent-50: var(--accent-50);
+  --color-accent-100: var(--accent-100);
+  --color-accent-200: var(--accent-200);
+  --color-accent-500: var(--accent-500);
+  --color-accent-600: var(--accent-600);
+  --color-accent-700: var(--accent-700);
+
+  --color-success-50: var(--success-50);
+  --color-success-500: var(--success-500);
+  --color-success-600: var(--success-600);
+  --color-warning-50: var(--warning-50);
+  --color-warning-500: var(--warning-500);
+  --color-warning-600: var(--warning-600);
+  --color-danger-50: var(--danger-50);
+  --color-danger-500: var(--danger-500);
+  --color-danger-600: var(--danger-600);
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+
+/* Force light-mode UA styling on native form controls — an OS set to dark
+   mode otherwise renders invisible white-on-white text on inputs/selects
+   we didn't explicitly color. */
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ---- Enterprise component primitives ----
+   Plain classes (not @apply) so any component opts in without Tailwind
+   churn, and a change here propagates everywhere at once. */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-weight: 600;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-4);
+  transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease, transform 60ms ease;
+  white-space: nowrap;
+  user-select: none;
+}
+.btn:active { transform: translateY(0.5px); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+.btn:focus-visible { outline: 2px solid var(--accent-500); outline-offset: 2px; }
+
+.btn-primary { background: var(--accent-500); color: #ffffff; box-shadow: var(--shadow-xs); }
+.btn-primary:hover { background: var(--accent-600); }
+
+.btn-secondary { background: var(--surface); color: var(--gray-700); border: 1px solid var(--border-strong); }
+.btn-secondary:hover { background: var(--gray-50); border-color: var(--gray-400); }
+
+.btn-danger { background: var(--surface); color: var(--danger-600); border: 1px solid var(--border-strong); }
+.btn-danger:hover { background: var(--danger-50); border-color: var(--danger-500); }
+
+.btn-ghost { background: transparent; color: var(--gray-600); }
+.btn-ghost:hover { background: var(--gray-100); }
+
+.input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.875rem;
+  color: var(--foreground);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+.input::placeholder { color: var(--gray-400); }
+.input:hover { border-color: var(--gray-400); }
+.input:focus { outline: none; border-color: var(--accent-500); box-shadow: 0 0 0 3px var(--accent-100); }
+.input[aria-invalid="true"] { border-color: var(--danger-500); }
+.input[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px var(--danger-50); }
+
+.label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--gray-600);
+  margin-bottom: var(--space-1);
+  letter-spacing: 0.01em;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 2px var(--space-2);
+  border-radius: 999px;
+  line-height: 1.4;
+}
+.badge-neutral { background: var(--gray-100); color: var(--gray-600); }
+.badge-success { background: var(--success-50); color: var(--success-600); }
+.badge-warning { background: var(--warning-50); color: var(--warning-600); }
+.badge-danger  { background: var(--danger-50);  color: var(--danger-600); }
+.badge-accent  { background: var(--accent-50);  color: var(--accent-700); }
+
+.divider { border: none; border-top: 1px solid var(--border); }
+
+.panel-muted {
+  background: var(--gray-50);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  padding: var(--space-4) var(--space-5);
+}
+
+.list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border);
+}
+.list-row:last-child { border-bottom: none; }
+
+/* Drag handle used for reorderable rows (menu items, etc.) */
+.drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  color: var(--gray-400);
+  cursor: grab;
+  touch-action: none;
+}
+.drag-handle:hover { background: var(--gray-100); color: var(--gray-600); }
+
+/* Thin, unobtrusive scrollbars — still usable on POS touch screens */
+* { scrollbar-width: thin; scrollbar-color: var(--gray-300) transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 999px; }
+*::-webkit-scrollbar-thumb:hover { background: var(--gray-400); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

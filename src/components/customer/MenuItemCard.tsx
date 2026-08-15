@@ -4,6 +4,7 @@ import Image from "next/image";
 import type { MenuItem } from "@/types/database";
 import { formatCurrency } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
+import { PlateIcon } from "./Icon";
 
 export function MenuItemCard({
   item,
@@ -29,8 +30,8 @@ export function MenuItemCard({
             className="object-cover"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-2xl">
-            🍽️
+          <div className="flex h-full w-full items-center justify-center text-neutral-300">
+            <PlateIcon className="h-7 w-7" />
           </div>
         )}
       </div>

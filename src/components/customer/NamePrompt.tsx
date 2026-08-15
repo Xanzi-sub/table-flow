@@ -7,9 +7,9 @@ export function NamePrompt({ onSubmit }: { onSubmit: (name: string) => void }) {
   const [name, setName] = useState("");
 
   return (
-    <div className="absolute inset-0 z-50 flex flex-col justify-end bg-black/50 backdrop-blur-sm sm:rounded-[2rem]">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/50 backdrop-blur-sm sm:rounded-[2rem]">
       <div className="rounded-t-3xl bg-white p-6 shadow-2xl">
-        <h1 className="text-xl font-bold text-neutral-900">Welcome 👋</h1>
+        <h1 className="text-xl font-bold text-neutral-900">Welcome</h1>
         <p className="mt-1 text-sm text-neutral-500">
           What&apos;s your name? We&apos;ll use it for your order.
         </p>

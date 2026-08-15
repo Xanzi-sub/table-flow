@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { formatCurrency } from "@/lib/utils";
 import { submitOrder } from "@/app/actions/orders";
+import { TrashIcon } from "./Icon";
 
 interface CartDrawerProps {
   open: boolean;
@@ -55,7 +56,7 @@ export function CartDrawer({
   }
 
   return (
-    <div className="absolute inset-0 z-40 flex flex-col justify-end bg-black/50 sm:rounded-[2rem]">
+    <div className="fixed inset-0 z-40 flex flex-col justify-end bg-black/50 sm:rounded-[2rem]">
       <div className="flex max-h-[85%] flex-col rounded-t-3xl bg-white p-5 shadow-2xl">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-neutral-900">
@@ -114,7 +115,7 @@ export function CartDrawer({
                   aria-label={`Remove ${line.item.name}`}
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-red-500 hover:bg-red-50"
                 >
-                  🗑
+                  <TrashIcon className="h-4 w-4" />
                 </button>
               </div>
             ))}

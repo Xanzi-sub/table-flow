@@ -5,6 +5,7 @@ import Image from "next/image";
 import type { MenuItem } from "@/types/database";
 import { formatCurrency } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
+import { PlateIcon } from "./Icon";
 
 export function ItemDetailModal({
   item,
@@ -23,14 +24,14 @@ export function ItemDetailModal({
   }
 
   return (
-    <div className="absolute inset-0 z-40 flex flex-col justify-end bg-black/50 sm:rounded-[2rem]">
+    <div className="fixed inset-0 z-40 flex flex-col justify-end bg-black/50 sm:rounded-[2rem]">
       <div className="max-h-[85%] overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl">
         <div className="relative mb-4 h-40 w-full overflow-hidden rounded-2xl bg-neutral-100">
           {item.image_url ? (
             <Image src={item.image_url} alt={item.name} fill className="object-cover" />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-4xl">
-              🍽️
+            <div className="flex h-full w-full items-center justify-center text-neutral-300">
+              <PlateIcon className="h-10 w-10" />
             </div>
           )}
         </div>

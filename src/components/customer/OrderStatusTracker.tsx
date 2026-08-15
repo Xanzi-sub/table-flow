@@ -93,7 +93,7 @@ function drawReceipt(
   ctx.textAlign = "center";
   ctx.font = "500 14px system-ui, -apple-system, sans-serif";
   ctx.fillStyle = "#6b7385";
-  ctx.fillText("Thank you for your order! 🍽️", RECEIPT_WIDTH / 2, y + 80);
+  ctx.fillText("Thank you for your order!", RECEIPT_WIDTH / 2, y + 80);
 }
 
 export function OrderStatusTracker({
@@ -187,7 +187,7 @@ export function OrderStatusTracker({
   }
 
   return (
-    <div className="absolute inset-0 z-40 flex flex-col justify-end bg-black/50 sm:rounded-[2rem]">
+    <div className="fixed inset-0 z-40 flex flex-col justify-end bg-black/50 sm:rounded-[2rem]">
       <div className="max-h-[85%] overflow-y-auto rounded-t-3xl bg-white p-6 shadow-2xl">
         <div className="flex items-center justify-between">
           <div>

@@ -43,7 +43,7 @@ export function OrderHistoryModal({
   }, [orderIds]);
 
   return (
-    <div className="absolute inset-0 z-40 flex flex-col justify-end bg-black/50 sm:rounded-[2rem]">
+    <div className="fixed inset-0 z-40 flex flex-col justify-end bg-black/50 sm:rounded-[2rem]">
       <div className="max-h-[85%] overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-neutral-900">Your Orders</h2>

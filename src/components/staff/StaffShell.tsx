@@ -364,6 +364,17 @@ export function StaffShell({
           )}
         </div>
 
+        {/* Brand logo */}
+        <div className="flex justify-center border-t border-[#E3E5E8] py-4">
+          <Image
+            src="/images/table-flow-logo.png"
+            alt="TableFlow"
+            width={2172}
+            height={724}
+            className="h-16 w-auto opacity-70"
+          />
+        </div>
+
         {/* Bottom user area */}
         <div className="border-t border-[#E3E5E8] p-3">
           {role === "waiter" && (
@@ -389,16 +400,6 @@ export function StaffShell({
               <span className="text-[9px] text-[#8C929B]">{togglingDuty ? "..." : "Change"}</span>
             </button>
           )}
-
-          <div className="mb-2 flex justify-center">
-            <Image
-              src="/images/table-flow-logo.png"
-              alt="TableFlow"
-              width={2172}
-              height={724}
-              className="h-4 w-auto opacity-70"
-            />
-          </div>
 
           <div className="flex items-center gap-2.5 px-2 py-2">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EEF0F3] text-[9px] font-bold text-[#515862]">
@@ -530,6 +531,16 @@ export function StaffShell({
               )}
             </div>
 
+            <div className="flex justify-center border-t border-[#E3E5E8] py-4">
+              <Image
+                src="/images/table-flow-logo.png"
+                alt="TableFlow"
+                width={2172}
+                height={724}
+                className="h-16 w-auto opacity-70"
+              />
+            </div>
+
             <div className="border-t border-[#E3E5E8] p-4">
               <div className="mb-3 flex items-center gap-2.5">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#EEF0F3] text-[9px] font-bold text-[#515862]">
@@ -541,16 +552,6 @@ export function StaffShell({
 
                   <div className="mt-0.5 text-[8px] capitalize text-[#969BA4]">{role}</div>
                 </div>
-              </div>
-
-              <div className="mb-3 flex justify-center">
-                <Image
-                  src="/images/table-flow-logo.png"
-                  alt="TableFlow"
-                  width={2172}
-                  height={724}
-                  className="h-4 w-auto opacity-70"
-                />
               </div>
 
               <form action={signOutStaff}>

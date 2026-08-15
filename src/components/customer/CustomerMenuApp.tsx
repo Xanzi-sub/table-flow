@@ -14,6 +14,7 @@ import { CartDrawer } from "./CartDrawer";
 import { OrderStatusTracker } from "./OrderStatusTracker";
 import { OrderHistoryModal } from "./OrderHistoryModal";
 import { NamePrompt } from "./NamePrompt";
+import { CartIcon, ReceiptIcon, WarningIcon } from "./Icon";
 
 const FINGERPRINT_KEY = "tf_customer_id";
 const NAME_KEY = "tf_customer_name";
@@ -35,7 +36,7 @@ function CartButton({ onOpen }: { onOpen: () => void }) {
       className="relative flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1.5"
       aria-label="View your order"
     >
-      <span className="text-base">🛒</span>
+      <span className="text-base"><CartIcon className="h-4 w-4" /></span>
       {totalItems > 0 && (
         <span className="text-xs font-bold text-neutral-900">{formatCurrency(totalAmount)}</span>
       )}
@@ -56,7 +57,7 @@ function OrdersButton({ count, onOpen }: { count: number; onOpen: () => void }) 
       className="relative flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1.5"
       aria-label="View your orders"
     >
-      <span className="text-base">🧾</span>
+      <span className="text-base"><ReceiptIcon className="h-4 w-4" /></span>
       <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-neutral-900 text-[10px] font-bold text-white">
         {count}
       </span>
@@ -343,9 +344,9 @@ function MenuAppContent({ table, categories, items, groups, venueName, venueLogo
       {awaitingName && <NamePrompt onSubmit={handleNameSubmit} />}
 
       {sessionError && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 p-6 sm:rounded-[2rem]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6 sm:rounded-[2rem]">
           <div className="rounded-2xl bg-white p-5 text-center shadow-2xl">
-            <p className="text-2xl">⚠️</p>
+            <WarningIcon className="mx-auto h-8 w-8 text-amber-500" />
             <p className="mt-2 text-sm font-medium text-neutral-700">{sessionError}</p>
           </div>
         </div>

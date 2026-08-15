@@ -354,7 +354,7 @@ export function StaffShell({
       {/* Desktop sidebar                                                     */}
       {/* ------------------------------------------------------------------ */}
 
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[236px] flex-col border-r border-[#DFE2E6] bg-[#FFFFFF] xl:flex">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[320px] flex-col border-r border-[#DFE2E6] bg-[#FFFFFF] xl:flex">
         {/* Brand */}
         <div className="flex h-[68px] items-center border-b border-[#E5E7EA] px-5">
           <div className="flex min-w-0 items-center gap-3">
@@ -385,7 +385,7 @@ export function StaffShell({
         </div>
 
         {/* Navigation */}
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 py-5">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
           {operations.length > 0 && (
             <NavigationGroup label="Operations" items={operations} isActive={isActive} />
           )}
@@ -528,21 +528,21 @@ export function StaffShell({
             className="fixed inset-0 z-40 bg-black/20 xl:hidden"
           />
 
-          <aside className="fixed inset-y-0 left-0 z-50 flex w-[280px] flex-col border-r border-[#DFE2E6] bg-white xl:hidden">
+          <aside className="fixed inset-y-0 left-0 z-50 flex w-[360px] max-w-[92vw] flex-col border-r border-[#DFE2E6] bg-white xl:hidden">
             <div className="flex h-[64px] items-center justify-between border-b border-[#E3E5E8] px-4">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#777D86]">
+              <span className="text-[16px] font-semibold uppercase tracking-[0.12em] text-[#777D86]">
                 Navigation
               </span>
 
               <button
                 onClick={() => setNavOpen(false)}
-                className="flex h-7 w-7 items-center justify-center text-[#777D86]"
+                className="flex h-10 w-10 items-center justify-center text-[#777D86]"
               >
-                <Icon name="close" size={16} />
+                <Icon name="close" size={24} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-3 py-5">
+            <div className="flex-1 overflow-y-auto px-4 py-5">
               {operations.length > 0 && (
                 <NavigationGroup
                   label="Operations"
@@ -605,7 +605,7 @@ export function StaffShell({
       {/* Main application area                                               */}
       {/* ------------------------------------------------------------------ */}
 
-      <div className="flex min-h-dvh min-w-0 flex-1 flex-col xl:pl-[236px]">
+      <div className="flex min-h-dvh min-w-0 flex-1 flex-col xl:pl-[320px]">
         {/* Desktop utility header */}
         <div className="hidden h-[64px] items-center justify-between border-b border-[#DFE2E6] bg-white px-7 xl:flex">
           <div>
@@ -674,9 +674,9 @@ function NavigationGroup({
 }) {
   return (
     <div>
-      <div className="mb-2 px-2 text-[8px] font-semibold uppercase tracking-[0.14em] text-[#A0A5AD]">{label}</div>
+      <div className="mb-3 px-3 text-[16px] font-semibold uppercase tracking-[0.12em] text-[#A0A5AD]">{label}</div>
 
-      <div className="space-y-0.5">
+      <div className="space-y-1">
         {items.map((item) => {
           const active = isActive(item.href);
           const iconName = getNavIcon(item.label);
@@ -686,19 +686,19 @@ function NavigationGroup({
               key={item.href}
               href={item.href}
               onClick={onNavigate}
-              className={`group flex h-[36px] items-center gap-2.5 px-2.5 text-[10px] font-medium transition-colors ${
+              className={`group flex h-[64px] items-center gap-4 px-4 text-[20px] font-medium transition-colors ${
                 active
                   ? "bg-[#EEF2FF] text-[#2454D6]"
                   : "text-[#626973] hover:bg-[#F5F6F8] hover:text-[#30353D]"
               }`}
             >
               <span className={active ? "text-[#2454D6]" : "text-[#9298A1] group-hover:text-[#555C66]"}>
-                <Icon name={iconName} size={15} />
+                <Icon name={iconName} size={30} />
               </span>
 
               <span className="flex-1">{item.label}</span>
 
-              {active && <span className="h-1.5 w-1.5 rounded-full bg-[#2F5CFF]" />}
+              {active && <span className="h-3 w-3 rounded-full bg-[#2F5CFF]" />}
             </Link>
           );
         })}

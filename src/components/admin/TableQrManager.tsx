@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { createTable, updateTable, deleteTable } from "@/app/actions/tables";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { TableRow } from "@/types/database";
 
 const CARD_WIDTH = 480;
@@ -103,6 +104,8 @@ function QrCard({ venueName, table }: { venueName: string; table: TableRow }) {
   const [tableNumber, setTableNumber] = useState(table.table_number?.toString() ?? "");
   const [section, setSection] = useState(table.section ?? "");
   const [saving, setSaving] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -139,8 +142,10 @@ function QrCard({ venueName, table }: { venueName: string; table: TableRow }) {
   }
 
   async function handleDelete() {
-    if (!confirm(`Delete Table ${table.table_number ?? ""}? This removes its QR code.`)) return;
+    setDeleting(true);
     await deleteTable(table.id);
+    setDeleting(false);
+    setConfirmingDelete(false);
   }
 
   return (
@@ -183,12 +188,23 @@ function QrCard({ venueName, table }: { venueName: string; table: TableRow }) {
             <button onClick={() => setEditing(true)} className="btn btn-secondary min-w-0 flex-1 truncate !px-2 !py-1.5 !text-xs">
               Edit
             </button>
-            <button onClick={handleDelete} className="btn btn-danger min-w-0 flex-1 truncate !px-2 !py-1.5 !text-xs">
+            <button onClick={() => setConfirmingDelete(true)} className="btn btn-danger min-w-0 flex-1 truncate !px-2 !py-1.5 !text-xs">
               Delete
             </button>
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmingDelete}
+        title={`Delete Table ${table.table_number ?? ""}?`}
+        description="This removes its QR code — the sticker will stop working."
+        confirmLabel="Delete"
+        danger
+        loading={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmingDelete(false)}
+      />
     </div>
   );
 }

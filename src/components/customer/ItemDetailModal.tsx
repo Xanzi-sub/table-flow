@@ -23,65 +23,147 @@ export function ItemDetailModal({
     onClose();
   }
 
+  const total = item.price * quantity;
+
   return (
-    <div className="fixed inset-0 z-40 flex flex-col justify-end bg-black/50 sm:rounded-[2rem]">
-      <div className="max-h-[85%] overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl">
-        <div className="relative mb-4 h-40 w-full overflow-hidden rounded-2xl bg-neutral-100">
-          {item.image_url ? (
-            <Image src={item.image_url} alt={item.name} fill className="object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-neutral-300">
-              <PlateIcon className="h-10 w-10" />
-            </div>
-          )}
-        </div>
+    <div className="fixed inset-0 z-50 bg-[#171614]/60 backdrop-blur-[5px]">
+      <div className="flex min-h-full items-end justify-center sm:items-center sm:p-6">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="item-detail-title"
+          className="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[30px] bg-[#faf9f7] shadow-[0_-20px_70px_rgba(0,0,0,0.2)] sm:max-w-[520px] sm:rounded-[30px]"
+        >
+          {/* Image */}
+          <div className="relative h-[260px] shrink-0 bg-[#eeeae4] sm:h-[300px]">
+            {item.image_url ? (
+              <Image
+                src={item.image_url}
+                alt={item.name}
+                fill
+                sizes="(max-width: 640px) 100vw, 520px"
+                className="object-cover"
+                priority
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-[#c5beb4]">
+                <PlateIcon className="h-14 w-14" />
+              </div>
+            )}
 
-        <h2 className="text-lg font-bold text-neutral-900">{item.name}</h2>
-        {item.description && (
-          <p className="mt-1 text-sm text-neutral-500">{item.description}</p>
-        )}
-        <p className="mt-2 text-base font-semibold text-neutral-900">
-          {formatCurrency(item.price)}
-        </p>
+            {/* Bottom fade */}
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#faf9f7] to-transparent" />
 
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Add a note (e.g. no onions)"
-          rows={2}
-          className="mt-4 w-full rounded-xl border border-neutral-300 px-3 py-2 text-sm"
-        />
-
-        <div className="mt-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 rounded-full border border-neutral-300 px-3 py-1.5">
+            {/* Close */}
             <button
-              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-              className="text-lg font-semibold text-neutral-700"
+              type="button"
+              onClick={onClose}
+              aria-label="Close item"
+              className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-md transition hover:bg-black/60 active:scale-95"
             >
-              −
-            </button>
-            <span className="w-6 text-center font-medium">{quantity}</span>
-            <button
-              onClick={() => setQuantity((q) => q + 1)}
-              className="text-lg font-semibold text-neutral-700"
-            >
-              +
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
+                <path d="M6 6l12 12" />
+                <path d="M18 6 6 18" />
+              </svg>
             </button>
           </div>
-          <button
-            onClick={handleAdd}
-            className="rounded-xl bg-neutral-900 px-6 py-3 text-sm font-semibold text-white"
-          >
-            Add · {formatCurrency(item.price * quantity)}
-          </button>
-        </div>
 
-        <button
-          onClick={onClose}
-          className="mt-4 w-full text-center text-sm text-neutral-400"
-        >
-          Cancel
-        </button>
+          {/* Content */}
+          <div className="min-h-0 overflow-y-auto px-5 pb-5 sm:px-7">
+            <div className="relative">
+              <div className="flex items-start justify-between gap-5">
+                <div className="min-w-0">
+                  <h2
+                    id="item-detail-title"
+                    className="text-[25px] font-semibold leading-tight tracking-[-0.035em] text-[#171614]"
+                  >
+                    {item.name}
+                  </h2>
+
+                  {item.description && (
+                    <p className="mt-2 text-[14px] leading-[1.55] text-[#77736d]">
+                      {item.description}
+                    </p>
+                  )}
+                </div>
+
+                <span className="shrink-0 pt-1 text-[15px] font-semibold text-[#171614]">
+                  {formatCurrency(item.price)}
+                </span>
+              </div>
+
+              {/* Notes */}
+              <div className="mt-7">
+                <label
+                  htmlFor="item-notes"
+                  className="text-[12px] font-semibold text-[#45413c]"
+                >
+                  Special instructions
+                  <span className="ml-1 font-normal text-[#aaa49b]">
+                    Optional
+                  </span>
+                </label>
+
+                <textarea
+                  id="item-notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="e.g. no onions, extra sauce..."
+                  rows={3}
+                  className="mt-2 w-full resize-none rounded-[15px] border border-[#ddd8d0] bg-white px-4 py-3 text-[14px] leading-relaxed text-[#171614] outline-none transition placeholder:text-[#aaa49b] focus:border-[#171614] focus:ring-4 focus:ring-black/[0.04]"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom action */}
+          <div className="shrink-0 border-t border-[#e7e2da] bg-[#faf9f7] px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-4 sm:px-7">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex h-[50px] items-center rounded-full border border-[#d9d4cc] bg-white px-1.5">
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  aria-label="Decrease quantity"
+                  className="flex h-11 w-11 items-center justify-center rounded-full text-[20px] text-[#45413c] transition hover:bg-[#f2eee8] active:scale-90"
+                >
+                  −
+                </button>
+
+                <span className="w-8 text-center text-[14px] font-semibold text-[#171614]">
+                  {quantity}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => q + 1)}
+                  aria-label="Increase quantity"
+                  className="flex h-11 w-11 items-center justify-center rounded-full text-[20px] text-[#45413c] transition hover:bg-[#f2eee8] active:scale-90"
+                >
+                  +
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleAdd}
+                className="flex h-[50px] flex-1 items-center justify-center gap-2 rounded-full bg-[#171614] px-5 text-[14px] font-semibold text-white shadow-[0_8px_22px_rgba(0,0,0,0.14)] transition hover:bg-black active:scale-[0.985]"
+              >
+                Add to order
+                <span className="text-white/60">·</span>
+                {formatCurrency(total)}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

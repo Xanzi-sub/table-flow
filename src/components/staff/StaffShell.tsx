@@ -316,7 +316,7 @@ export function StaffShell({
   const management = items.filter((item) => item.section === "management");
 
   return (
-    <div className="flex min-h-dvh bg-[#F5F6F8] text-[#171A20]">
+    <div className="flex min-h-dvh flex-col bg-[#F5F6F8] text-[#171A20] xl:flex-row">
       {/* ------------------------------------------------------------------ */}
       {/* Desktop sidebar                                                     */}
       {/* ------------------------------------------------------------------ */}

@@ -169,38 +169,17 @@ export async function markTablePaid(
   tipAmount: number = 0
 ): Promise<ActionResult> {
   const supabase = await createClient();
+  const { error } = await supabase.rpc("mark_table_paid_with_loyalty", {
+    p_table_id: tableId,
+    p_method: method,
+    p_tip_amount: Math.max(0, tipAmount),
+  });
 
-  const { data: openOrders, error: fetchError } = await supabase
-    .from("orders")
-    .select("id")
-    .eq("table_id", tableId)
-    .in("status", ["pending", "preparing", "served"])
-    .order("created_at", { ascending: true });
-
-  if (fetchError) return { success: false, error: fetchError.message };
-  if (!openOrders || openOrders.length === 0) {
-    return { success: false, error: "No open orders to mark as paid." };
-  }
-
-  const { error: ordersError } = await supabase
-    .from("orders")
-    .update({ payment_status: "paid", payment_method: method })
-    .in(
-      "id",
-      openOrders.map((o) => o.id)
-    );
-
-  if (ordersError) return { success: false, error: ordersError.message };
-
-  if (tipAmount > 0) {
-    const { error: tipError } = await supabase
-      .from("orders")
-      .update({ tip_amount: tipAmount })
-      .eq("id", openOrders[0].id);
-    if (tipError) return { success: false, error: tipError.message };
-  }
+  if (error) return { success: false, error: error.message };
 
   revalidatePath("/staff/dashboard");
+  revalidatePath("/staff/tips");
+  revalidatePath("/admin/customers");
   return { success: true };
 }
 

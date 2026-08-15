@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Order, OrderStatus } from "@/types/database";
 import { requestTableService } from "@/app/actions/orders";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
+import { OrderFeedbackForm } from "./OrderFeedbackForm";
 
 const STEPS: OrderStatus[] = ["pending", "preparing", "served", "completed"];
 const LABELS: Record<OrderStatus, string> = {
@@ -165,6 +166,11 @@ export function OrderStatusTracker({
   vatPercentage,
   tipPercentage,
   waiterName,
+  customerId,
+  loyaltyPoints,
+  loyaltyRewardThreshold,
+  loyaltyRewardValue,
+  onPointsChanged,
   onClose,
 }: {
   orderId: string;
@@ -174,6 +180,11 @@ export function OrderStatusTracker({
   vatPercentage: number;
   tipPercentage: number;
   waiterName: string | null;
+  customerId: string | null;
+  loyaltyPoints: number;
+  loyaltyRewardThreshold: number;
+  loyaltyRewardValue: number;
+  onPointsChanged: (points: number) => void;
   onClose: () => void;
 }) {
   const [order, setOrder] = useState<Order | null>(null);
@@ -233,6 +244,9 @@ export function OrderStatusTracker({
   }, [order, lines, venueName, tableNumber, waiterName, vatPercentage, tipPercentage]);
 
   const activeIndex = order ? STEPS.indexOf(order.status) : 0;
+  const loyaltyProgress = loyaltyRewardThreshold > 0
+    ? Math.min(100, Math.round((loyaltyPoints / loyaltyRewardThreshold) * 100))
+    : 0;
   // Re-enable automatically once staff mark the bill paid — no need to
   // close/reopen this modal to request again for a later round.
   const requested = order?.payment_status !== "paid" && requesting;
@@ -241,6 +255,19 @@ export function OrderStatusTracker({
     setRequesting(true);
     await requestTableService(tableId);
   }
+
+  useEffect(() => {
+    if (!customerId || order?.payment_status !== "paid") return;
+    const supabase = createClient();
+    supabase
+      .from("customer_profiles")
+      .select("loyalty_points")
+      .eq("id", customerId)
+      .single()
+      .then(({ data }) => {
+        if (data) onPointsChanged(data.loyalty_points);
+      });
+  }, [customerId, order?.payment_status, onPointsChanged]);
 
   function handleDownloadReceipt() {
     const canvas = canvasRef.current;
@@ -326,6 +353,40 @@ export function OrderStatusTracker({
                   </span>
                 </div>
               </div>
+            )}
+
+            <div className="mt-4 rounded-[16px] border border-[#e7e2da] bg-white p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#99938a]">
+                    Loyalty wallet
+                  </p>
+                  <p className="mt-1 text-[18px] font-bold text-[#171614]">{loyaltyPoints} points</p>
+                </div>
+                <span className="rounded-full bg-[#eeeae4] px-3 py-1 text-[11px] font-semibold text-[#5f5a53]">
+                  {loyaltyPoints >= loyaltyRewardThreshold
+                    ? `${formatCurrency(loyaltyRewardValue)} reward ready`
+                    : `${Math.max(0, loyaltyRewardThreshold - loyaltyPoints)} to reward`}
+                </span>
+              </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#eeeae4]">
+                <div
+                  className="h-full rounded-full bg-[#171614] transition-[width] duration-500"
+                  style={{ width: `${loyaltyProgress}%` }}
+                />
+              </div>
+              <p className="mt-2 text-[10px] text-[#99938a]">
+                {loyaltyRewardThreshold} points unlocks a {formatCurrency(loyaltyRewardValue)} reward.
+              </p>
+            </div>
+
+            {order?.status === "completed" && customerId && (
+              <OrderFeedbackForm
+                orderId={order.id}
+                customerId={customerId}
+                tableId={tableId}
+                waiterId={order.waiter_id}
+              />
             )}
 
             {order && lines.length > 0 && (

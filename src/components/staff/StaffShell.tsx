@@ -78,7 +78,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     href: "/admin/analytics",
-    label: "Analytics",
+    label: "Intelligence",
     roles: ["manager", "admin"],
     section: "management",
   },
@@ -269,6 +269,7 @@ function getNavIcon(label: string): IconName {
     case "Marketing":
       return "marketing";
     case "Analytics":
+    case "Intelligence":
       return "analytics";
     case "Staff":
       return "staff";
@@ -714,7 +715,7 @@ function getPageTitle(pathname: string) {
   if (pathname.startsWith("/admin/menu-scan")) return "Menu Scan";
   if (pathname.startsWith("/admin/menu")) return "Menu";
   if (pathname.startsWith("/staff/marketing")) return "Marketing";
-  if (pathname.startsWith("/admin/analytics")) return "Analytics";
+  if (pathname.startsWith("/admin/analytics")) return "Intelligence";
   if (pathname.startsWith("/admin/staff")) return "Staff";
   if (pathname.startsWith("/admin/settings")) return "Settings";
 

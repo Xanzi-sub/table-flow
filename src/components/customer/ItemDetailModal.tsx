@@ -9,9 +9,11 @@ import { PlateIcon } from "./Icon";
 
 export function ItemDetailModal({
   item,
+  recommendations,
   onClose,
 }: {
   item: MenuItem;
+  recommendations: MenuItem[];
   onClose: () => void;
 }) {
   const { addItem } = useCart();
@@ -122,6 +124,39 @@ export function ItemDetailModal({
                   className="mt-2 w-full resize-none rounded-[15px] border border-[#ddd8d0] bg-white px-4 py-3 text-[14px] leading-relaxed text-[#171614] outline-none transition placeholder:text-[#aaa49b] focus:border-[#171614] focus:ring-4 focus:ring-black/[0.04]"
                 />
               </div>
+
+              {recommendations.length > 0 && (
+                <div className="mt-7 border-t border-[#e7e2da] pt-5">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#99938a]">
+                    Goes well with this
+                  </p>
+                  <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                    {recommendations.map((recommendation) => (
+                      <button
+                        key={recommendation.id}
+                        type="button"
+                        onClick={() => addItem(recommendation, 1, "")}
+                        className="flex min-w-[180px] items-center justify-between gap-3 rounded-[14px] border border-[#e7e2da] bg-white p-3 text-left transition active:scale-[0.98]"
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate text-[12px] font-semibold text-[#171614]">
+                            {recommendation.name}
+                          </span>
+                          <span className="mt-0.5 block text-[11px] text-[#77736d]">
+                            {formatCurrency(recommendation.price)}
+                          </span>
+                        </span>
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#171614] text-base text-white">
+                          +
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-[10px] text-[#aaa49b]">
+                    Suggested from items guests at this venue actually order together.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 

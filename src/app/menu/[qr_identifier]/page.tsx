@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getPublicMenuRecommendations } from "@/app/actions/intelligence";
 import { CustomerMenuApp } from "@/components/customer/CustomerMenuApp";
 
 export default async function CustomerMenuPage({
@@ -31,21 +32,30 @@ export default async function CustomerMenuPage({
         .eq("status", "live")
         .order("sort_order"),
       supabase.from("menu_category_groups").select("*").order("sort_order"),
-      supabase.from("venue_settings").select("name, logo_url, vat_percentage, tip_percentage").maybeSingle(),
+      supabase
+        .from("venue_settings")
+        .select("name, logo_url, vat_percentage, tip_percentage, loyalty_reward_threshold, loyalty_reward_value")
+        .maybeSingle(),
       supabase.rpc("get_table_waiter_name", { p_table_id: table.id }),
     ]);
+
+  const menuItems = items ?? [];
+  const recommendationsByItem = await getPublicMenuRecommendations(menuItems);
 
   return (
     <CustomerMenuApp
       table={table}
       categories={categories ?? []}
-      items={items ?? []}
+      items={menuItems}
       groups={groups ?? []}
       venueName={venue?.name ?? "TableFlow"}
       venueLogoUrl={venue?.logo_url ?? null}
       vatPercentage={venue?.vat_percentage ?? 15}
       tipPercentage={venue?.tip_percentage ?? 10}
       waiterName={waiterName ?? null}
+      recommendationsByItem={recommendationsByItem}
+      loyaltyRewardThreshold={venue?.loyalty_reward_threshold ?? 500}
+      loyaltyRewardValue={venue?.loyalty_reward_value ?? 50}
     />
   );
 }

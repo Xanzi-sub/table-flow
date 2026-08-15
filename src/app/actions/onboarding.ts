@@ -72,6 +72,9 @@ export async function saveVenueSettings(input: {
   phone?: string;
   vatPercentage?: number;
   tipPercentage?: number;
+  loyaltyPointsPerRand?: number;
+  loyaltyRewardThreshold?: number;
+  loyaltyRewardValue?: number;
 }): Promise<ActionResult> {
   const supabase = await createClient();
   const existing = await getVenueSettings();
@@ -83,6 +86,9 @@ export async function saveVenueSettings(input: {
     phone: input.phone ?? null,
     ...(input.vatPercentage !== undefined ? { vat_percentage: input.vatPercentage } : {}),
     ...(input.tipPercentage !== undefined ? { tip_percentage: input.tipPercentage } : {}),
+    ...(input.loyaltyPointsPerRand !== undefined ? { loyalty_points_per_rand: input.loyaltyPointsPerRand } : {}),
+    ...(input.loyaltyRewardThreshold !== undefined ? { loyalty_reward_threshold: input.loyaltyRewardThreshold } : {}),
+    ...(input.loyaltyRewardValue !== undefined ? { loyalty_reward_value: input.loyaltyRewardValue } : {}),
   };
 
   const { error } = existing

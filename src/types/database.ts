@@ -39,11 +39,41 @@ export interface VenueSettings {
   phone: string | null;
   vat_percentage: number;
   tip_percentage: number;
+  loyalty_points_per_rand: number;
+  loyalty_reward_threshold: number;
+  loyalty_reward_value: number;
   zendio_account_id: string | null;
   zendio_account_label: string | null;
   zendio_profile_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface LoyaltyLedgerEntry {
+  id: string;
+  customer_id: string;
+  order_id: string | null;
+  points: number;
+  entry_type: "earned" | "redeemed" | "adjustment";
+  description: string | null;
+  created_at: string;
+}
+
+export type FeedbackRecoveryStatus = "open" | "contacted" | "resolved";
+
+export interface OrderFeedback {
+  id: string;
+  order_id: string;
+  customer_id: string;
+  table_id: string | null;
+  waiter_id: string | null;
+  rating: number;
+  comment: string | null;
+  recovery_status: FeedbackRecoveryStatus;
+  recovery_notes: string | null;
+  created_at: string;
+  resolved_at: string | null;
+  resolved_by: string | null;
 }
 
 export interface StaffInvite {
@@ -182,6 +212,8 @@ export interface Database {
       orders: { Row: Order; Insert: Partial<Order> & { table_id: string; customer_session_id: string; total_amount: number }; Update: Partial<Order>; Relationships: [] };
       order_items: { Row: OrderItem; Insert: Partial<OrderItem> & { order_id: string; menu_item_id: string; quantity: number; unit_price: number }; Update: Partial<OrderItem>; Relationships: [] };
       marketing_campaigns: { Row: MarketingCampaign; Insert: Partial<MarketingCampaign> & { title: string; message_body: string }; Update: Partial<MarketingCampaign>; Relationships: [] };
+      loyalty_ledger: { Row: LoyaltyLedgerEntry; Insert: Partial<LoyaltyLedgerEntry> & { customer_id: string; points: number }; Update: Partial<LoyaltyLedgerEntry>; Relationships: [] };
+      order_feedback: { Row: OrderFeedback; Insert: Partial<OrderFeedback> & { order_id: string; customer_id: string; rating: number }; Update: Partial<OrderFeedback>; Relationships: [] };
       tip_cashout_requests: { Row: TipCashoutRequest; Insert: Partial<TipCashoutRequest> & { waiter_id: string; amount: number }; Update: Partial<TipCashoutRequest>; Relationships: [] };
       venue_settings: { Row: VenueSettings; Insert: Partial<VenueSettings> & { name: string }; Update: Partial<VenueSettings>; Relationships: [] };
       staff_invites: { Row: StaffInvite; Insert: Partial<StaffInvite> & { email: string; full_name: string }; Update: Partial<StaffInvite>; Relationships: [] };
@@ -206,6 +238,10 @@ export interface Database {
       staff_profiles_is_empty: { Args: Record<string, never>; Returns: boolean };
       request_table_service: { Args: { p_table_id: string }; Returns: undefined };
       get_table_waiter_name: { Args: { p_table_id: string }; Returns: string | null };
+      mark_table_paid_with_loyalty: {
+        Args: { p_table_id: string; p_method: PaymentMethod; p_tip_amount?: number };
+        Returns: undefined;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

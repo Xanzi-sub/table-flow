@@ -17,6 +17,9 @@ export function SettingsManager({ venue }: { venue: VenueSettings | null }) {
   const [phone, setPhone] = useState(venue?.phone ?? "");
   const [vatPercentage, setVatPercentage] = useState((venue?.vat_percentage ?? 15).toString());
   const [tipPercentage, setTipPercentage] = useState((venue?.tip_percentage ?? 10).toString());
+  const [loyaltyPointsPerRand, setLoyaltyPointsPerRand] = useState((venue?.loyalty_points_per_rand ?? 1).toString());
+  const [loyaltyRewardThreshold, setLoyaltyRewardThreshold] = useState((venue?.loyalty_reward_threshold ?? 500).toString());
+  const [loyaltyRewardValue, setLoyaltyRewardValue] = useState((venue?.loyalty_reward_value ?? 50).toString());
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoUrl, setLogoUrl] = useState(venue?.logo_url ?? null);
   const [saving, setSaving] = useState(false);
@@ -54,6 +57,9 @@ export function SettingsManager({ venue }: { venue: VenueSettings | null }) {
         logoUrl: uploadedLogoUrl,
         vatPercentage: Number(vatPercentage) || 0,
         tipPercentage: Number(tipPercentage) || 0,
+        loyaltyPointsPerRand: Number(loyaltyPointsPerRand) || 0,
+        loyaltyRewardThreshold: Number(loyaltyRewardThreshold) || 0,
+        loyaltyRewardValue: Number(loyaltyRewardValue) || 0,
       });
       if (!result.success) throw new Error(result.error ?? "Could not save venue details");
 
@@ -161,6 +167,48 @@ export function SettingsManager({ venue }: { venue: VenueSettings | null }) {
               />
               <p className="mt-1 text-xs text-[var(--foreground-muted)]">
                 Shown as a reference on receipts — never changes what&apos;s charged.
+              </p>
+            </label>
+            <div className="sm:col-span-2 border-t border-[var(--border)] pt-4">
+              <h3 className="text-sm font-bold text-[var(--foreground)]">Loyalty rules</h3>
+              <p className="mt-1 text-xs text-[var(--foreground-muted)]">
+                Points are awarded automatically when staff marks an order paid.
+              </p>
+            </div>
+            <label className="text-sm">
+              <span className="label">Points earned per R1</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={loyaltyPointsPerRand}
+                onChange={(e) => setLoyaltyPointsPerRand(e.target.value)}
+                className="input"
+              />
+            </label>
+            <label className="text-sm">
+              <span className="label">Reward points threshold</span>
+              <input
+                type="number"
+                min={1}
+                step="1"
+                value={loyaltyRewardThreshold}
+                onChange={(e) => setLoyaltyRewardThreshold(e.target.value)}
+                className="input"
+              />
+            </label>
+            <label className="text-sm">
+              <span className="label">Reward value (R)</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={loyaltyRewardValue}
+                onChange={(e) => setLoyaltyRewardValue(e.target.value)}
+                className="input"
+              />
+              <p className="mt-1 text-xs text-[var(--foreground-muted)]">
+                Example: {loyaltyRewardThreshold || "500"} points unlocks a {`R${loyaltyRewardValue || "50"}`} reward.
               </p>
             </label>
           </div>

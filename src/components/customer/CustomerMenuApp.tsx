@@ -38,6 +38,9 @@ interface CustomerMenuAppProps {
   vatPercentage: number;
   tipPercentage: number;
   waiterName: string | null;
+  recommendationsByItem: Record<string, MenuItem[]>;
+  loyaltyRewardThreshold: number;
+  loyaltyRewardValue: number;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -421,6 +424,9 @@ function MenuAppContent({
   vatPercentage,
   tipPercentage,
   waiterName,
+  recommendationsByItem,
+  loyaltyRewardThreshold,
+  loyaltyRewardValue,
 }: CustomerMenuAppProps) {
   const [identity, setIdentity] = useState<{
     userId: string;
@@ -436,6 +442,7 @@ function MenuAppContent({
   const [viewingOrderId, setViewingOrderId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [initializing, setInitializing] = useState(true);
+  const [loyaltyPoints, setLoyaltyPoints] = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
@@ -472,16 +479,20 @@ function MenuAppContent({
 
         const cachedName = localStorage.getItem(NAME_KEY);
 
-        const { data: pastOrders } = await supabase
-          .from("orders")
-          .select("id")
-          .eq("customer_session_id", userId)
-          .eq("table_id", table.id)
-          .order("created_at", { ascending: false });
+        const [{ data: pastOrders }, { data: customerProfile }] = await Promise.all([
+          supabase
+            .from("orders")
+            .select("id")
+            .eq("customer_session_id", userId)
+            .eq("table_id", table.id)
+            .order("created_at", { ascending: false }),
+          supabase.from("customer_profiles").select("loyalty_points").eq("id", userId).maybeSingle(),
+        ]);
 
         if (pastOrders) {
           setOrderIds(pastOrders.map((order) => order.id));
         }
+        setLoyaltyPoints(customerProfile?.loyalty_points ?? 0);
 
         if (cachedName) {
           setIdentity({
@@ -593,6 +604,11 @@ function MenuAppContent({
                     {table.section ? ` · ${table.section}` : ""}
                   </p>
                 </div>
+                {identity && !awaitingName && (
+                  <p className="mt-1 text-[10px] font-semibold text-[#8a847b]">
+                    {loyaltyPoints} loyalty points
+                  </p>
+                )}
               </div>
             </div>
 
@@ -669,6 +685,7 @@ function MenuAppContent({
         {selectedItem && (
           <ItemDetailModal
             item={selectedItem}
+            recommendations={recommendationsByItem[selectedItem.id] ?? []}
             onClose={() => setSelectedItem(null)}
           />
         )}
@@ -705,6 +722,11 @@ function MenuAppContent({
             vatPercentage={vatPercentage}
             tipPercentage={tipPercentage}
             waiterName={waiterName}
+            customerId={identity?.customerId ?? null}
+            loyaltyPoints={loyaltyPoints}
+            loyaltyRewardThreshold={loyaltyRewardThreshold}
+            loyaltyRewardValue={loyaltyRewardValue}
+            onPointsChanged={setLoyaltyPoints}
             onClose={() => setViewingOrderId(null)}
           />
         )}

@@ -98,7 +98,15 @@ function wrapText(
   ctx.fillText(line, x, lineY);
 }
 
-function QrCard({ venueName, table }: { venueName: string; table: TableRow }) {
+function QrCard({
+  venueName,
+  table,
+  onDeleted,
+}: {
+  venueName: string;
+  table: TableRow;
+  onDeleted: (id: string) => void;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [editing, setEditing] = useState(false);
   const [tableNumber, setTableNumber] = useState(table.table_number?.toString() ?? "");
@@ -143,9 +151,10 @@ function QrCard({ venueName, table }: { venueName: string; table: TableRow }) {
 
   async function handleDelete() {
     setDeleting(true);
-    await deleteTable(table.id);
+    const result = await deleteTable(table.id);
     setDeleting(false);
     setConfirmingDelete(false);
+    if (result.success) onDeleted(table.id);
   }
 
   return (
@@ -294,7 +303,12 @@ export function TableQrManager({
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {sorted.map((table) => (
-          <QrCard key={table.id} venueName={venueName} table={table} />
+          <QrCard
+            key={table.id}
+            venueName={venueName}
+            table={table}
+            onDeleted={(id) => setTables((prev) => prev.filter((t) => t.id !== id))}
+          />
         ))}
         {sorted.length === 0 && (
           <p className="col-span-full rounded-lg border border-dashed border-[var(--border-strong)] py-10 text-center text-sm text-[var(--foreground-muted)]">

@@ -25,7 +25,7 @@ export function AuthLayout({
             alt="TableFlow"
             width={2172}
             height={724}
-            className="h-7 w-auto"
+            className="h-14 w-auto"
           />
         </div>
         <p className="text-sm font-semibold uppercase tracking-widest text-neutral-500">

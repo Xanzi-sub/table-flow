@@ -73,7 +73,7 @@ export default function Home() {
     <main className="min-h-screen bg-[#F7F8FA] text-[#111318]">
       {/* Navigation */}
       <header className="border-b border-[#E4E6EA] bg-white">
-        <div className="mx-auto flex h-[72px] max-w-[1280px] items-center justify-between px-6 lg:px-8">
+        <div className="mx-auto flex h-[140px] max-w-[1280px] items-center justify-between px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-3">
            <Image
                      src="/images/table-flow-logo.png"
@@ -81,7 +81,7 @@ export default function Home() {
                      width={2172}
                      height={724}
                      priority
-                     className="h-14 w-auto"
+                     className="h-28 w-auto"
                    />
           </Link>
 

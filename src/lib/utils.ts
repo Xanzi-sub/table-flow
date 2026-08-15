@@ -21,3 +21,9 @@ export function formatDateTime(value: string | Date) {
     timeZone: "Africa/Johannesburg",
   }).format(new Date(value));
 }
+
+export function formatStaffName(value: string | null | undefined, fallback = "Staff member") {
+  const name = value?.trim();
+  if (!name || name.includes("@")) return fallback;
+  return name;
+}

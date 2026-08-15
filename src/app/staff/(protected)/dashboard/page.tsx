@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireStaffProfile } from "@/lib/get-staff-profile";
 import { StaffDashboard } from "@/components/staff/StaffDashboard";
+import { formatStaffName } from "@/lib/utils";
 
 export default async function StaffDashboardPage() {
   const profile = await requireStaffProfile();
@@ -16,7 +17,7 @@ export default async function StaffDashboardPage() {
   ]);
 
   const waiterNames = Object.fromEntries(
-    (waiters ?? []).map((w) => [w.id, w.full_name])
+    (waiters ?? []).map((w) => [w.id, formatStaffName(w.full_name, "Assigned waiter")])
   );
   const waiterOptions = (waiters ?? []).filter((w) => w.role === "waiter");
 

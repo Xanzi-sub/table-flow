@@ -51,6 +51,27 @@ export async function updateStaffRole(
   return { success: true };
 }
 
+export async function updateStaffName(id: string, fullName: string): Promise<ActionResult> {
+  try {
+    await assertManagerOrAdmin();
+  } catch (err) {
+    return { success: false, error: (err as Error).message };
+  }
+
+  const name = fullName.trim();
+  if (!name || name.includes("@")) {
+    return { success: false, error: "Enter the staff member's name, not an email address." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("staff_profiles").update({ full_name: name }).eq("id", id);
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath("/admin/staff");
+  revalidatePath("/staff/dashboard");
+  return { success: true };
+}
+
 export async function removeStaffMember(id: string): Promise<ActionResult> {
   try {
     await assertManagerOrAdmin();

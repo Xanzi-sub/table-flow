@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { formatCurrency, formatDateTime } from "@/lib/utils";
+import { formatCurrency, formatDateTime, formatStaffName } from "@/lib/utils";
 import { updateOrderStatus } from "@/app/actions/orders";
 import {
   resolveServiceRequest,
@@ -383,7 +383,7 @@ function ReassignWaiter({
 
           {waiters.map((waiter) => (
             <option key={waiter.id} value={waiter.id}>
-              {waiter.full_name}
+              {formatStaffName(waiter.full_name)}
               {waiter.is_checked_in ? "" : " · Off duty"}
             </option>
           ))}

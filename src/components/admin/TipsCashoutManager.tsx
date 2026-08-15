@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { resolveCashoutRequest } from "@/app/actions/tips";
-import { formatCurrency, formatDateTime } from "@/lib/utils";
+import { formatCurrency, formatDateTime, formatStaffName } from "@/lib/utils";
 import type { TipCashoutStatus } from "@/types/database";
 
 const STATUS_BADGE: Record<TipCashoutStatus, string> = {
@@ -169,7 +169,7 @@ export function TipsCashoutManager({ initialRequests }: { initialRequests: Casho
               return (
                 <tr key={r.id} className="border-b border-[var(--border)] last:border-0">
                   <td className="px-4 py-3 text-xs text-[var(--foreground-muted)]">{formatDateTime(r.requested_at)}</td>
-                  <td className="px-4 py-3 font-medium text-[var(--foreground)]">{waiter?.full_name ?? "—"}</td>
+                  <td className="px-4 py-3 font-medium text-[var(--foreground)]">{formatStaffName(waiter?.full_name, "Staff member")}</td>
                   <td className="px-4 py-3 font-semibold text-[var(--foreground)]">{formatCurrency(r.amount)}</td>
                   <td className="px-4 py-3">
                     <span className={`badge capitalize ${STATUS_BADGE[r.status]}`}>{r.status}</span>

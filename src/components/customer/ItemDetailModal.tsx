@@ -30,13 +30,13 @@ export function ItemDetailModal({
   const total = calculateItemOfferTotal(item, offer, quantity);
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#171614]/60 backdrop-blur-[5px]">
-      <div className="flex min-h-full items-end justify-center sm:items-center sm:p-6">
+    <div className="fixed inset-0 z-50 h-dvh overflow-hidden bg-[#171614]/60 backdrop-blur-[5px]">
+      <div className="flex h-full min-h-0 items-end justify-center sm:items-center sm:p-6">
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="item-detail-title"
-          className="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[30px] bg-[#faf9f7] shadow-[0_-20px_70px_rgba(0,0,0,0.2)] sm:max-w-[520px] sm:rounded-[30px]"
+          className="flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[30px] bg-[#faf9f7] shadow-[0_-20px_70px_rgba(0,0,0,0.2)] sm:max-h-[calc(100dvh-3rem)] sm:max-w-[520px] sm:rounded-[30px]"
         >
           {/* Image */}
           <div className="relative h-[260px] shrink-0 bg-[#eeeae4] sm:h-[300px]">
@@ -82,7 +82,7 @@ export function ItemDetailModal({
           </div>
 
           {/* Content */}
-          <div className="min-h-0 overflow-y-auto px-5 pb-5 sm:px-7">
+          <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-5 pb-5 sm:px-7">
             <div className="relative">
               <div className="flex items-start justify-between gap-5">
                 <div className="min-w-0">

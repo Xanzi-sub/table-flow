@@ -4,6 +4,7 @@ import type { TableRow } from "@/types/database";
 import { resolveServiceRequest } from "@/app/actions/tables";
 import { MarkPaidDialog } from "./MarkPaidDialog";
 import { useState } from "react";
+import { formatStaffName } from "@/lib/utils";
 
 const STATUS_LABEL: Record<TableRow["status"], string> = {
   vacant: "Available",
@@ -100,7 +101,7 @@ export function TableCard({
 
         {waiterName ? (
           <div className="mt-1 text-[10px] text-[#626973]">
-            {waiterName}
+            {formatStaffName(waiterName, "Assigned waiter")}
           </div>
         ) : (
           <div className="mt-1 text-[10px] text-[#A0A5AD]">

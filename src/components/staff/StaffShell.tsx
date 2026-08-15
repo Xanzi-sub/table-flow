@@ -7,6 +7,7 @@ import { useState } from "react";
 import type { UserRole } from "@/types/database";
 import { signOutStaff } from "@/app/actions/auth";
 import { toggleCheckIn } from "@/app/actions/tables";
+import { formatStaffName } from "@/lib/utils";
 
 interface NavItem {
   href: string;
@@ -337,7 +338,8 @@ export function StaffShell({
     return pathname === href || pathname.startsWith(`${href}/`);
   }
 
-  const initials = (fullName || "?")
+  const displayName = formatStaffName(fullName);
+  const initials = displayName
     .split(" ")
     .filter(Boolean)
     .map((part) => part[0])
@@ -354,7 +356,7 @@ export function StaffShell({
       {/* Desktop sidebar                                                     */}
       {/* ------------------------------------------------------------------ */}
 
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[320px] flex-col border-r border-[#DFE2E6] bg-[#FFFFFF] xl:flex">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[280px] flex-col border-r border-[#DFE2E6] bg-[#FFFFFF] xl:flex">
         {/* Brand */}
         <div className="flex h-[68px] items-center border-b border-[#E5E7EA] px-5">
           <div className="flex min-w-0 items-center gap-3">
@@ -440,7 +442,7 @@ export function StaffShell({
             </span>
 
             <div className="min-w-0 flex-1">
-              <div className="truncate text-[10px] font-semibold text-[#30353D]">{fullName}</div>
+              <div className="truncate text-[10px] font-semibold text-[#30353D]">{displayName}</div>
 
               <div className="mt-0.5 text-[8px] capitalize text-[#969BA4]">{role}</div>
             </div>
@@ -528,17 +530,17 @@ export function StaffShell({
             className="fixed inset-0 z-40 bg-black/20 xl:hidden"
           />
 
-          <aside className="fixed inset-y-0 left-0 z-50 flex w-[360px] max-w-[92vw] flex-col border-r border-[#DFE2E6] bg-white xl:hidden">
+          <aside className="fixed inset-y-0 left-0 z-50 flex w-[320px] max-w-[92vw] flex-col border-r border-[#DFE2E6] bg-white xl:hidden">
             <div className="flex h-[64px] items-center justify-between border-b border-[#E3E5E8] px-4">
-              <span className="text-[16px] font-semibold uppercase tracking-[0.12em] text-[#777D86]">
+              <span className="text-[14px] font-semibold uppercase tracking-[0.12em] text-[#777D86]">
                 Navigation
               </span>
 
               <button
                 onClick={() => setNavOpen(false)}
-                className="flex h-10 w-10 items-center justify-center text-[#777D86]"
+                className="flex h-9 w-9 items-center justify-center text-[#777D86]"
               >
-                <Icon name="close" size={24} />
+                <Icon name="close" size={20} />
               </button>
             </div>
 
@@ -581,7 +583,7 @@ export function StaffShell({
                 </span>
 
                 <div className="min-w-0">
-                  <div className="truncate text-[10px] font-semibold text-[#30353D]">{fullName}</div>
+                  <div className="truncate text-[10px] font-semibold text-[#30353D]">{displayName}</div>
 
                   <div className="mt-0.5 text-[8px] capitalize text-[#969BA4]">{role}</div>
                 </div>
@@ -605,7 +607,7 @@ export function StaffShell({
       {/* Main application area                                               */}
       {/* ------------------------------------------------------------------ */}
 
-      <div className="flex min-h-dvh min-w-0 flex-1 flex-col xl:pl-[320px]">
+      <div className="flex min-h-dvh min-w-0 flex-1 flex-col xl:pl-[280px]">
         {/* Desktop utility header */}
         <div className="hidden h-[64px] items-center justify-between border-b border-[#DFE2E6] bg-white px-7 xl:flex">
           <div>
@@ -637,7 +639,7 @@ export function StaffShell({
               </span>
 
               <div className="leading-none">
-                <div className="text-[9px] font-semibold text-[#3A3F47]">{fullName}</div>
+                <div className="text-[9px] font-semibold text-[#3A3F47]">{displayName}</div>
 
                 <div className="mt-1 text-[7px] capitalize text-[#969BA4]">{role}</div>
               </div>
@@ -674,7 +676,7 @@ function NavigationGroup({
 }) {
   return (
     <div>
-      <div className="mb-3 px-3 text-[16px] font-semibold uppercase tracking-[0.12em] text-[#A0A5AD]">{label}</div>
+      <div className="mb-2 px-3 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#A0A5AD]">{label}</div>
 
       <div className="space-y-1">
         {items.map((item) => {
@@ -686,19 +688,19 @@ function NavigationGroup({
               key={item.href}
               href={item.href}
               onClick={onNavigate}
-              className={`group flex h-[64px] items-center gap-4 px-4 text-[20px] font-medium transition-colors ${
+              className={`group flex h-[50px] items-center gap-3 px-3.5 text-[15px] font-medium transition-colors ${
                 active
                   ? "bg-[#EEF2FF] text-[#2454D6]"
                   : "text-[#626973] hover:bg-[#F5F6F8] hover:text-[#30353D]"
               }`}
             >
               <span className={active ? "text-[#2454D6]" : "text-[#9298A1] group-hover:text-[#555C66]"}>
-                <Icon name={iconName} size={30} />
+                <Icon name={iconName} size={22} />
               </span>
 
               <span className="flex-1">{item.label}</span>
 
-              {active && <span className="h-3 w-3 rounded-full bg-[#2F5CFF]" />}
+              {active && <span className="h-2.5 w-2.5 rounded-full bg-[#2F5CFF]" />}
             </Link>
           );
         })}

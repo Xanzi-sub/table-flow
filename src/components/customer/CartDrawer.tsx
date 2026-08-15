@@ -77,9 +77,9 @@ export function CartDrawer({
   const savings = Math.max(0, regularAmount - totalAmount);
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#171614]/60 backdrop-blur-[5px]">
-      <div className="flex min-h-full items-end justify-center sm:items-center sm:p-6">
-        <div className="flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[30px] bg-[#faf9f7] shadow-[0_-20px_70px_rgba(0,0,0,0.2)] sm:max-w-[540px] sm:rounded-[30px]">
+    <div className="fixed inset-0 z-50 h-dvh overflow-hidden bg-[#171614]/60 backdrop-blur-[5px]">
+      <div className="flex h-full min-h-0 items-end justify-center sm:items-center sm:p-6">
+        <div className="flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[30px] bg-[#faf9f7] shadow-[0_-20px_70px_rgba(0,0,0,0.2)] sm:max-h-[calc(100dvh-3rem)] sm:max-w-[540px] sm:rounded-[30px]">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-[#e7e2da] px-5 py-5 sm:px-7">
             <div>
@@ -157,7 +157,7 @@ export function CartDrawer({
           ) : (
             <>
               {/* Items */}
-              <div className="min-h-0 flex-1 overflow-y-auto px-5 sm:px-7">
+              <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-5 sm:px-7">
                 <div className="divide-y divide-[#e7e2da]">
                   {lines.map((line) => (
                     <div

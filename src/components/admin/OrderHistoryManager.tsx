@@ -5,7 +5,7 @@ import { listOrderHistory } from "@/app/actions/orders";
 import { Select } from "@/components/ui/Select";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { OrderDetailModal } from "./OrderDetailModal";
-import { formatCurrency, formatDateTime } from "@/lib/utils";
+import { formatCurrency, formatDateTime, formatStaffName } from "@/lib/utils";
 import type { OrderStatus, StaffProfile } from "@/types/database";
 
 const STATUS_BADGE: Record<OrderStatus, string> = {
@@ -165,7 +165,7 @@ export function OrderHistoryManager({
                       <span className="text-xs text-[var(--foreground-muted)]"> · {tableRow.section}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3">{waiter?.full_name ?? "Unassigned"}</td>
+                  <td className="px-4 py-3">{formatStaffName(waiter?.full_name, "Unassigned")}</td>
                   <td className="px-4 py-3">{customer?.full_name ?? "Guest"}</td>
                   <td className="px-4 py-3">{order.order_items?.length ?? 0}</td>
                   <td className="px-4 py-3 font-semibold text-[var(--foreground)]">

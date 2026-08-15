@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { StaffInvite, StaffProfile, UserRole } from "@/types/database";
-import { updateStaffRole, removeStaffMember } from "@/app/actions/staff";
+import { updateStaffName, updateStaffRole, removeStaffMember } from "@/app/actions/staff";
 import { inviteStaff, deleteInvite } from "@/app/actions/onboarding";
 import { Select } from "@/components/ui/Select";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -23,6 +23,10 @@ export function StaffManager({
   const [role, setRole] = useState<UserRole>("waiter");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nameDrafts, setNameDrafts] = useState<Record<string, string>>(
+    Object.fromEntries(initialStaff.map((member) => [member.id, member.full_name]))
+  );
+  const [savingNameId, setSavingNameId] = useState<string | null>(null);
 
   // Live on/off-duty status — a waiter toggling elsewhere should reflect here without a refresh.
   useEffect(() => {
@@ -82,6 +86,19 @@ export function StaffManager({
     if (result.success) {
       setStaff((prev) => prev.map((s) => (s.id === id ? { ...s, role: newRole } : s)));
     }
+  }
+
+  async function handleNameSave(id: string) {
+    setSavingNameId(id);
+    setError(null);
+    const result = await updateStaffName(id, nameDrafts[id] ?? "");
+    setSavingNameId(null);
+    if (!result.success) {
+      setError(result.error ?? "Could not update staff name");
+      return;
+    }
+    const name = nameDrafts[id].trim();
+    setStaff((current) => current.map((member) => (member.id === id ? { ...member, full_name: name } : member)));
   }
 
   async function handleRemove(id: string) {
@@ -171,8 +188,24 @@ export function StaffManager({
           <div className="mt-2 flex flex-col">
             {staff.map((s) => (
               <div key={s.id} className="list-row">
-                <div>
-                  <p className="text-sm font-semibold text-[var(--foreground)]">{s.full_name}</p>
+                <div className="min-w-0 flex-1">
+                  <div className="flex max-w-md items-center gap-2">
+                    <input
+                      value={nameDrafts[s.id] ?? s.full_name}
+                      onChange={(event) =>
+                        setNameDrafts((current) => ({ ...current, [s.id]: event.target.value }))
+                      }
+                      aria-label={`Display name for ${s.email ?? "staff member"}`}
+                      className="input !py-1.5 !text-xs"
+                    />
+                    <button
+                      onClick={() => handleNameSave(s.id)}
+                      disabled={savingNameId === s.id || (nameDrafts[s.id] ?? s.full_name).trim() === s.full_name}
+                      className="btn btn-secondary !py-1.5 !text-xs"
+                    >
+                      {savingNameId === s.id ? "Saving…" : "Save name"}
+                    </button>
+                  </div>
                   <p className="text-xs text-[var(--foreground-muted)]">{s.email ?? "—"}</p>
                 </div>
                 <div className="flex items-center gap-2">

@@ -98,7 +98,7 @@ export function SettingsManager({ venue }: { venue: VenueSettings | null }) {
 
   return (
     <div>
-      <PageHeader title="Settings" description="Venue details and connected services." />
+      <PageHeader title="Settings" description="Venue details, billing rules, loyalty and connected services." />
 
       <div className="flex flex-col gap-6">
         <form onSubmit={handleSaveVenue} className="card flex flex-col gap-4 p-6">
@@ -141,6 +141,12 @@ export function SettingsManager({ venue }: { venue: VenueSettings | null }) {
                 />
               </div>
             </label>
+            <div id="billing" className="sm:col-span-2 border-t border-[var(--border)] pt-4">
+              <h3 className="text-sm font-bold text-[var(--foreground)]">Billing, VAT & tips</h3>
+              <p className="mt-1 text-xs text-[var(--foreground-muted)]">
+                Configure receipt tax breakdown and the suggested gratuity shown to customers.
+              </p>
+            </div>
             <label className="text-sm">
               <span className="label">VAT / tax percentage</span>
               <input

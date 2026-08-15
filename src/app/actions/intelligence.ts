@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { formatStaffName } from "@/lib/utils";
 import type { MenuItem, Order, OrderFeedback, OrderItem, TableRow } from "@/types/database";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -191,7 +192,7 @@ export async function getIntelligenceSnapshot(): Promise<IntelligenceSnapshot> {
   const tables = (tablesResult.data ?? []) as TableRow[];
   const waiters = waitersResult.data ?? [];
   const tableMap = new Map(tables.map((table) => [table.id, table]));
-  const waiterMap = new Map(waiters.map((waiter) => [waiter.id, waiter.full_name]));
+  const waiterMap = new Map(waiters.map((waiter) => [waiter.id, formatStaffName(waiter.full_name)]));
   const feedbackRows = (feedbackResult.data ?? []) as OrderFeedback[];
 
   const todayOrders = paidOrders.filter((order) => new Date(order.created_at) >= todayStart);
@@ -323,7 +324,7 @@ export async function getIntelligenceSnapshot(): Promise<IntelligenceSnapshot> {
       const waiterOrders = currentPeriodOrders.filter((order) => order.waiter_id === waiter.id);
       return {
         id: waiter.id,
-        name: waiter.full_name,
+        name: formatStaffName(waiter.full_name),
         activeTables: activeTables.filter((table) => table.current_waiter_id === waiter.id).length,
         paidOrders: waiterOrders.length,
         revenue: waiterOrders.reduce((sum, order) => sum + order.total_amount, 0),

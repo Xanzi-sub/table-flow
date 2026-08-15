@@ -26,13 +26,13 @@ export function NamePrompt({
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#171614]/55 backdrop-blur-[6px]">
-      <div className="flex min-h-full items-end justify-center sm:items-center sm:p-6">
+    <div className="fixed inset-0 z-[100] h-dvh overflow-hidden bg-[#171614]/55 backdrop-blur-[6px]">
+      <div className="flex h-full min-h-0 items-end justify-center sm:items-center sm:p-6">
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="guest-welcome-title"
-          className="w-full overflow-hidden rounded-t-[30px] bg-[#faf9f7] shadow-[0_-20px_70px_rgba(0,0,0,0.18)] sm:max-w-[430px] sm:rounded-[30px]"
+          className="max-h-[92dvh] w-full touch-pan-y overflow-y-auto overscroll-contain rounded-t-[30px] bg-[#faf9f7] shadow-[0_-20px_70px_rgba(0,0,0,0.18)] sm:max-h-[calc(100dvh-3rem)] sm:max-w-[430px] sm:rounded-[30px]"
         >
           {/* Decorative top area */}
           <div className="relative h-24 overflow-hidden bg-[#eee9e1]">

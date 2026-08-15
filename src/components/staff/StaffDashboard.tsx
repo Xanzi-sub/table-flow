@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Order, StaffProfile, TableRow } from "@/types/database";
 import { TableCard } from "./TableCard";
 import { TableDetailModal } from "./TableDetailModal";
+import { formatStaffName } from "@/lib/utils";
 
 interface StaffDashboardProps {
   profile: StaffProfile;
@@ -226,7 +227,7 @@ export function StaffDashboard({
             )}
 
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#171A1F] text-[10px] font-semibold text-white">
-              {profile.full_name
+              {formatStaffName(profile.full_name)
                 .split(" ")
                 .map((name) => name[0])
                 .slice(0, 2)

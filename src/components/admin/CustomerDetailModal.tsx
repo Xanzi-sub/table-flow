@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { listOrderHistory } from "@/app/actions/orders";
 import { OrderDetailModal } from "./OrderDetailModal";
-import { formatCurrency, formatDateTime } from "@/lib/utils";
+import { formatCurrency, formatDateTime, formatStaffName } from "@/lib/utils";
 import type { OrderStatus } from "@/types/database";
 
 const STATUS_BADGE: Record<OrderStatus, string> = {
@@ -110,7 +110,7 @@ export function CustomerDetailModal({
           tableLabel={
             one(selectedOrder.tables)?.table_number ? `Table ${one(selectedOrder.tables)!.table_number}` : "—"
           }
-          waiterName={one(selectedOrder.staff_profiles)?.full_name ?? "Unassigned"}
+          waiterName={formatStaffName(one(selectedOrder.staff_profiles)?.full_name, "Unassigned")}
           customerName={customerName}
           status={selectedOrder.status}
           paymentStatus={selectedOrder.payment_status}

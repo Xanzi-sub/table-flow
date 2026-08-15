@@ -17,7 +17,7 @@ const STATUS_BADGE: Record<OrderStatus, string> = {
   pending: "bg-amber-100 text-amber-700",
   preparing: "bg-blue-100 text-blue-700",
   served: "bg-emerald-100 text-emerald-700",
-  completed: "bg-neutral-200 text-neutral-600",
+  completed: "bg-[#eeeae4] text-[#77736d]",
   cancelled: "bg-red-100 text-red-700",
 };
 
@@ -43,41 +43,60 @@ export function OrderHistoryModal({
   }, [orderIds]);
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col justify-end bg-black/50 sm:rounded-[2rem]">
-      <div className="max-h-[85%] overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-neutral-900">Your Orders</h2>
-          <button onClick={onClose} className="text-sm text-neutral-400">
-            Close
-          </button>
-        </div>
-
-        <div className="mt-4 flex flex-col gap-2">
-          {orders.map((order) => (
+    <div className="fixed inset-0 z-40 bg-[#171614]/60 backdrop-blur-[5px]">
+      <div className="flex min-h-full items-end justify-center sm:items-center sm:p-6">
+        <div className="flex max-h-[85%] w-full flex-col overflow-hidden rounded-t-[30px] bg-[#faf9f7] shadow-[0_-20px_70px_rgba(0,0,0,0.2)] sm:max-w-[480px] sm:rounded-[30px]">
+          <div className="flex items-center justify-between border-b border-[#e7e2da] px-5 py-5 sm:px-7">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#99938a]">
+                This visit
+              </p>
+              <h2 className="mt-1 text-[20px] font-semibold tracking-[-0.02em] text-[#171614]">
+                Your Orders
+              </h2>
+            </div>
             <button
-              key={order.id}
-              onClick={() => onSelectOrder(order.id)}
-              className="flex items-center justify-between rounded-xl border border-neutral-200 p-3 text-left active:bg-neutral-50"
+              type="button"
+              onClick={onClose}
+              aria-label="Close your orders"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-[#eeeae4] text-[#5f5a53] transition hover:bg-[#e4dfd7] active:scale-95"
             >
-              <div>
-                <p className="text-sm font-semibold text-neutral-900">
-                  Order #{order.id.slice(0, 8).toUpperCase()}
-                </p>
-                <p className="text-xs text-neutral-400">{formatDateTime(order.created_at)}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-neutral-900">
-                  {formatCurrency(order.total_amount)}
-                </span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_BADGE[order.status]}`}>
-                  {STATUS_LABEL[order.status]}
-                </span>
-              </div>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <path d="M6 6l12 12" />
+                <path d="M18 6 6 18" />
+              </svg>
             </button>
-          ))}
-          {orders.length === 0 && (
-            <p className="py-6 text-center text-sm text-neutral-400">Loading…</p>
-          )}
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 sm:px-7">
+            <div className="flex flex-col gap-2.5">
+              {orders.map((order) => (
+                <button
+                  key={order.id}
+                  onClick={() => onSelectOrder(order.id)}
+                  className="flex items-center justify-between rounded-[16px] border border-[#e7e2da] bg-white p-3.5 text-left transition active:bg-[#f5f2ee]"
+                >
+                  <div>
+                    <p className="text-[13px] font-semibold text-[#171614]">
+                      Order #{order.id.slice(0, 8).toUpperCase()}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-[#99938a]">{formatDateTime(order.created_at)}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[13px] font-semibold text-[#171614]">
+                      {formatCurrency(order.total_amount)}
+                    </span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${STATUS_BADGE[order.status]}`}>
+                      {STATUS_LABEL[order.status]}
+                    </span>
+                  </div>
+                </button>
+              ))}
+              {orders.length === 0 && (
+                <p className="py-6 text-center text-[13px] text-[#99938a]">Loading…</p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

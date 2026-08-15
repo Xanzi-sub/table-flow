@@ -8,15 +8,16 @@ interface CategoryNavProps {
 
 export function CategoryNav({ categories, activeId, onSelect }: CategoryNavProps) {
   return (
-    <nav className="sticky top-0 z-20 flex gap-2 overflow-x-auto border-b border-neutral-200 bg-white/95 px-4 py-3 backdrop-blur">
+    <nav className="flex gap-2 overflow-x-auto px-4 py-3">
       {categories.map((cat) => (
         <button
           key={cat.id}
+          type="button"
           onClick={() => onSelect(cat.id)}
-          className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+          className={`shrink-0 rounded-full px-4 py-1.5 text-[13px] font-medium transition-colors ${
             activeId === cat.id
-              ? "bg-neutral-900 text-white"
-              : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+              ? "bg-[#171614] text-white"
+              : "bg-[#f1eee9] text-[#77736d] hover:bg-[#e7e2da]"
           }`}
         >
           {cat.name}

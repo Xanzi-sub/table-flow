@@ -257,91 +257,98 @@ export function OrderStatusTracker({
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col justify-end bg-black/50 sm:rounded-[2rem]">
-      <div className="max-h-[85%] overflow-y-auto rounded-t-3xl bg-white p-6 shadow-2xl">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-bold text-neutral-900">Order Status</h2>
-            <p className="text-xs text-neutral-400">
-              Order #{orderId.slice(0, 8).toUpperCase()}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100"
-            aria-label="Close"
-          >
-            ✕
-          </button>
-        </div>
-
-        <div className="mt-6 flex items-start justify-between">
-          {STEPS.filter((s) => s !== "cancelled").map((step, i) => (
-            <div key={step} className="relative flex flex-1 flex-col items-center">
-              {i > 0 && (
-                <div
-                  className={`absolute right-1/2 top-4 h-0.5 w-full -translate-y-1/2 ${
-                    i <= activeIndex ? "bg-emerald-500" : "bg-neutral-200"
-                  }`}
-                />
-              )}
-              <div
-                className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
-                  i < activeIndex
-                    ? "bg-emerald-500 text-white"
-                    : i === activeIndex
-                    ? "bg-emerald-500 text-white ring-4 ring-emerald-100"
-                    : "bg-neutral-200 text-neutral-500"
-                }`}
-              >
-                {i < activeIndex ? "✓" : i + 1}
-              </div>
-              <p className="mt-2 text-center text-[11px] font-medium text-neutral-500">
-                {LABELS[step]}
+    <div className="fixed inset-0 z-40 bg-[#171614]/60 backdrop-blur-[5px]">
+      <div className="flex min-h-full items-end justify-center sm:items-center sm:p-6">
+        <div className="flex max-h-[85%] w-full flex-col overflow-hidden rounded-t-[30px] bg-[#faf9f7] shadow-[0_-20px_70px_rgba(0,0,0,0.2)] sm:max-w-[480px] sm:rounded-[30px]">
+          <div className="flex items-center justify-between border-b border-[#e7e2da] px-5 py-5 sm:px-7">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#99938a]">
+                Order #{orderId.slice(0, 8).toUpperCase()}
               </p>
+              <h2 className="mt-1 text-[20px] font-semibold tracking-[-0.02em] text-[#171614]">Order Status</h2>
             </div>
-          ))}
-        </div>
-
-        {order && (
-          <div className="mt-6 flex items-center justify-between rounded-xl bg-neutral-50 px-4 py-3">
-            <span className="text-sm font-medium text-neutral-500">Total</span>
-            <div className="flex items-center gap-2">
-              <span className="text-base font-bold text-neutral-900">
-                {formatCurrency(order.total_amount)}
-              </span>
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                  order.payment_status === "paid"
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-amber-100 text-amber-700"
-                }`}
-              >
-                {order.payment_status === "paid" ? "Paid ✓" : "Unpaid"}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {order && lines.length > 0 && (
-          <div className="mt-4 flex flex-col items-center gap-3 rounded-xl border border-neutral-200 p-4">
-            <canvas ref={canvasRef} className="w-full max-w-[300px] rounded-lg" />
             <button
-              onClick={handleDownloadReceipt}
-              className="w-full rounded-xl border border-neutral-900 py-2.5 text-sm font-semibold text-neutral-900"
+              onClick={onClose}
+              aria-label="Close"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-[#eeeae4] text-[#5f5a53] transition hover:bg-[#e4dfd7] active:scale-95"
             >
-              Download Receipt
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <path d="M6 6l12 12" />
+                <path d="M18 6 6 18" />
+              </svg>
             </button>
           </div>
-        )}
 
-        <button
-          onClick={handleRequest}
-          disabled={requested}
-          className="mt-4 w-full rounded-xl bg-neutral-900 py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-50"
-        >
-          {requested ? "Waiter has been notified ✓" : "Request Waiter / Speedpoint"}
-        </button>
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-7">
+            <div className="flex items-start justify-between">
+              {STEPS.filter((s) => s !== "cancelled").map((step, i) => (
+                <div key={step} className="relative flex flex-1 flex-col items-center">
+                  {i > 0 && (
+                    <div
+                      className={`absolute right-1/2 top-4 h-0.5 w-full -translate-y-1/2 ${
+                        i <= activeIndex ? "bg-emerald-500" : "bg-[#e7e2da]"
+                      }`}
+                    />
+                  )}
+                  <div
+                    className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
+                      i < activeIndex
+                        ? "bg-emerald-500 text-white"
+                        : i === activeIndex
+                        ? "bg-emerald-500 text-white ring-4 ring-emerald-100"
+                        : "bg-[#eeeae4] text-[#99938a]"
+                    }`}
+                  >
+                    {i < activeIndex ? "✓" : i + 1}
+                  </div>
+                  <p className="mt-2 text-center text-[11px] font-medium text-[#77736d]">
+                    {LABELS[step]}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {order && (
+              <div className="mt-6 flex items-center justify-between rounded-[16px] bg-[#eeeae4] px-4 py-3">
+                <span className="text-[13px] font-medium text-[#77736d]">Total</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[15px] font-bold text-[#171614]">
+                    {formatCurrency(order.total_amount)}
+                  </span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                      order.payment_status === "paid"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-amber-100 text-amber-700"
+                    }`}
+                  >
+                    {order.payment_status === "paid" ? "Paid ✓" : "Unpaid"}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {order && lines.length > 0 && (
+              <div className="mt-4 flex flex-col items-center gap-3 rounded-[16px] border border-[#e7e2da] bg-white p-4">
+                <canvas ref={canvasRef} className="w-full max-w-[300px] rounded-lg" />
+                <button
+                  onClick={handleDownloadReceipt}
+                  className="w-full rounded-[13px] border border-[#171614] py-2.5 text-[13px] font-semibold text-[#171614] transition active:scale-[0.99]"
+                >
+                  Download Receipt
+                </button>
+              </div>
+            )}
+
+            <button
+              onClick={handleRequest}
+              disabled={requested}
+              className="mt-4 w-full rounded-[13px] bg-[#171614] py-3 text-[13px] font-semibold text-white transition-all hover:bg-black active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {requested ? "Waiter has been notified ✓" : "Request Waiter / Speedpoint"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

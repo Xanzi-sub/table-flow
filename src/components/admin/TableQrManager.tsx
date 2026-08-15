@@ -106,7 +106,11 @@ function QrCard({ venueName, table }: { venueName: string; table: TableRow }) {
 
   useEffect(() => {
     if (canvasRef.current) {
-      drawQrCard(canvasRef.current, venueName, table, window.location.origin);
+      // Always encode the configured public site URL, not window.location.origin —
+      // otherwise a QR generated while testing on localhost bakes "localhost"
+      // permanently into the downloaded PNG, unreachable from a guest's phone.
+      const origin = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+      drawQrCard(canvasRef.current, venueName, table, origin);
     }
   }, [venueName, table]);
 

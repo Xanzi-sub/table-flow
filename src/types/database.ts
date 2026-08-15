@@ -141,6 +141,26 @@ export interface MenuItem {
   updated_at: string;
 }
 
+export type MenuSpecialKind = "item_discount" | "combo";
+export type MenuSpecialDiscountType = "percentage" | "fixed_price";
+
+export interface MenuSpecial {
+  id: string;
+  name: string;
+  description: string | null;
+  kind: MenuSpecialKind;
+  item_ids: string[];
+  discount_type: MenuSpecialDiscountType;
+  discount_value: number;
+  status: MenuItemStatus;
+  starts_at: string | null;
+  ends_at: string | null;
+  sort_order: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CustomerProfile {
   id: string;
   phone_number: string | null;
@@ -173,6 +193,9 @@ export interface OrderItem {
   quantity: number;
   notes: string | null;
   unit_price: number;
+  bundle_id: string | null;
+  special_id: string | null;
+  special_name: string | null;
 }
 
 export interface MarketingCampaign {
@@ -208,6 +231,7 @@ export interface Database {
       menu_category_groups: { Row: MenuCategoryGroup; Insert: Partial<MenuCategoryGroup> & { name: string }; Update: Partial<MenuCategoryGroup>; Relationships: [] };
       menu_scan_jobs: { Row: MenuScanJob; Insert: Partial<MenuScanJob> & { image_urls: string[] }; Update: Partial<MenuScanJob>; Relationships: [] };
       menu_items: { Row: MenuItem; Insert: Partial<MenuItem> & { name: string; price: number }; Update: Partial<MenuItem>; Relationships: [] };
+      menu_specials: { Row: MenuSpecial; Insert: Partial<MenuSpecial> & { name: string; kind: MenuSpecialKind; item_ids: string[]; discount_type: MenuSpecialDiscountType; discount_value: number }; Update: Partial<MenuSpecial>; Relationships: [] };
       customer_profiles: { Row: CustomerProfile; Insert: Partial<CustomerProfile> & { id: string }; Update: Partial<CustomerProfile>; Relationships: [] };
       orders: { Row: Order; Insert: Partial<Order> & { table_id: string; customer_session_id: string; total_amount: number }; Update: Partial<Order>; Relationships: [] };
       order_items: { Row: OrderItem; Insert: Partial<OrderItem> & { order_id: string; menu_item_id: string; quantity: number; unit_price: number }; Update: Partial<OrderItem>; Relationships: [] };

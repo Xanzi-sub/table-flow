@@ -47,10 +47,11 @@ export function CartDrawer({
       customerSessionId,
       customerId: customerId ?? undefined,
       items: lines.map((l) => ({
-        menuItemId: l.item.id,
+        kind: l.kind,
+        menuItemId: l.kind === "item" ? l.item.id : undefined,
+        specialId: l.specialId,
         quantity: l.quantity,
         notes: l.notes || undefined,
-        unitPrice: l.item.price,
       })),
     });
 
@@ -64,6 +65,15 @@ export function CartDrawer({
     clear();
     onOrderSubmitted(result.data.orderId);
   }
+
+  const regularAmount = lines.reduce((sum, line) => {
+    const regularUnit =
+      line.kind === "combo"
+        ? (line.comboItems ?? []).reduce((itemSum, item) => itemSum + item.price, 0)
+        : line.item.price;
+    return sum + regularUnit * line.quantity;
+  }, 0);
+  const savings = Math.max(0, regularAmount - totalAmount);
 
   return (
     <div className="fixed inset-0 z-50 bg-[#171614]/60 backdrop-blur-[5px]">
@@ -150,7 +160,7 @@ export function CartDrawer({
                 <div className="divide-y divide-[#e7e2da]">
                   {lines.map((line) => (
                     <div
-                      key={`${line.item.id}-${line.notes}`}
+                      key={line.lineId}
                       className="flex gap-3.5 py-5"
                     >
                       {/* Image */}
@@ -186,8 +196,20 @@ export function CartDrawer({
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <p className="truncate text-[14px] font-semibold text-[#171614]">
-                              {line.item.name}
+                              {line.specialName ?? line.item.name}
                             </p>
+
+                            {line.specialName && (
+                              <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-700">
+                                {line.kind === "combo" ? "Paired combo" : "Special applied"}
+                              </p>
+                            )}
+
+                            {line.kind === "combo" && line.comboItems && (
+                              <p className="mt-1 line-clamp-2 text-[11px] text-[#99938a]">
+                                {line.comboItems.map((item) => item.name).join(" + ")}
+                              </p>
+                            )}
 
                             {line.notes && (
                               <p className="mt-1 truncate text-[11px] text-[#99938a]">
@@ -198,7 +220,7 @@ export function CartDrawer({
 
                           <p className="shrink-0 text-[14px] font-semibold text-[#171614]">
                             {formatCurrency(
-                              line.item.price * line.quantity
+                              line.unitPrice * line.quantity
                             )}
                           </p>
                         </div>
@@ -209,7 +231,7 @@ export function CartDrawer({
                               type="button"
                               onClick={() =>
                                 updateQuantity(
-                                  line.item.id,
+                                  line.lineId,
                                   line.quantity - 1
                                 )
                               }
@@ -227,7 +249,7 @@ export function CartDrawer({
                               type="button"
                               onClick={() =>
                                 updateQuantity(
-                                  line.item.id,
+                                  line.lineId,
                                   line.quantity + 1
                                 )
                               }
@@ -240,8 +262,8 @@ export function CartDrawer({
 
                           <button
                             type="button"
-                            onClick={() => removeItem(line.item.id)}
-                            aria-label={`Remove ${line.item.name}`}
+                            onClick={() => removeItem(line.lineId)}
+                            aria-label={`Remove ${line.specialName ?? line.item.name}`}
                             className="flex h-8 w-8 items-center justify-center rounded-full text-[#aaa49b] transition hover:bg-red-50 hover:text-red-500"
                           >
                             <TrashIcon className="h-4 w-4" />
@@ -279,8 +301,15 @@ export function CartDrawer({
 
                 <div className="flex items-center justify-between text-[13px] text-[#77736d]">
                   <span>Subtotal</span>
-                  <span>{formatCurrency(totalAmount)}</span>
+                  <span>{formatCurrency(regularAmount)}</span>
                 </div>
+
+                {savings > 0 && (
+                  <div className="mt-2 flex items-center justify-between text-[13px] font-semibold text-emerald-700">
+                    <span>Special savings</span>
+                    <span>−{formatCurrency(savings)}</span>
+                  </div>
+                )}
 
                 <div className="mt-2 flex items-center justify-between text-[13px] text-[#77736d]">
                   <span>VAT</span>

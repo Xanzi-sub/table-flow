@@ -13,7 +13,8 @@ export function MenuItemCard({
   item: MenuItem;
   onSelect: (item: MenuItem) => void;
 }) {
-  const { addItem } = useCart();
+  const { addItem, getItemOffer } = useCart();
+  const offer = getItemOffer(item);
 
   function handleQuickAdd(e: React.MouseEvent<HTMLButtonElement>) {
     e.stopPropagation();
@@ -44,6 +45,11 @@ export function MenuItemCard({
 
       {/* Information */}
       <div className="min-w-0 flex-1 py-0.5">
+        {offer && (
+          <span className="mb-1.5 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-amber-800">
+            {offer.specialName}
+          </span>
+        )}
         <div className="flex items-start justify-between gap-3">
           <h3 className="pr-2 text-[15px] font-semibold leading-[1.25] tracking-[-0.01em] text-[#171614]">
             {item.name}
@@ -57,8 +63,13 @@ export function MenuItemCard({
         )}
 
         <div className="mt-3 flex items-center justify-between gap-3">
-          <span className="text-[14px] font-semibold tracking-[-0.01em] text-[#171614]">
-            {formatCurrency(item.price)}
+          <span>
+            <span className="text-[14px] font-semibold tracking-[-0.01em] text-[#171614]">
+              {formatCurrency(offer?.unitPrice ?? item.price)}
+            </span>
+            {offer && (
+              <span className="ml-2 text-[11px] text-[#aaa49b] line-through">{formatCurrency(item.price)}</span>
+            )}
           </span>
 
           <button

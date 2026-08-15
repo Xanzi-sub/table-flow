@@ -16,7 +16,7 @@ export function ItemDetailModal({
   recommendations: MenuItem[];
   onClose: () => void;
 }) {
-  const { addItem } = useCart();
+  const { addItem, getItemOffer } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
 
@@ -25,7 +25,9 @@ export function ItemDetailModal({
     onClose();
   }
 
-  const total = item.price * quantity;
+  const offer = getItemOffer(item);
+  const effectivePrice = offer?.unitPrice ?? item.price;
+  const total = effectivePrice * quantity;
 
   return (
     <div className="fixed inset-0 z-50 bg-[#171614]/60 backdrop-blur-[5px]">
@@ -99,9 +101,18 @@ export function ItemDetailModal({
                 </div>
 
                 <span className="shrink-0 pt-1 text-[15px] font-semibold text-[#171614]">
-                  {formatCurrency(item.price)}
+                  {formatCurrency(effectivePrice)}
+                  {offer && (
+                    <span className="ml-2 text-[11px] font-normal text-[#aaa49b] line-through">{formatCurrency(item.price)}</span>
+                  )}
                 </span>
               </div>
+
+              {offer && (
+                <div className="mt-3 rounded-[13px] bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800">
+                  {offer.specialName} applied automatically
+                </div>
+              )}
 
               {/* Notes */}
               <div className="mt-7">

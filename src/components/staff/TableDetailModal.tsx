@@ -72,6 +72,8 @@ interface OrderLine {
   quantity: number;
   unitPrice: number;
   notes: string | null;
+  specialName: string | null;
+  bundleId: string | null;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -199,6 +201,12 @@ function OrderCard({
 
                     {line.name}
                   </div>
+
+                  {line.specialName && (
+                    <div className="mt-1 text-[8px] font-semibold uppercase tracking-[0.08em] text-amber-700">
+                      {line.bundleId ? `Combo · ${line.specialName}` : line.specialName}
+                    </div>
+                  )}
 
                   {line.notes && (
                     <div className="mt-1 max-w-[280px] text-[9px] leading-4 text-[#8A9099]">
@@ -457,7 +465,7 @@ export function TableDetailModal({
         const { data: itemRows } = await supabase
           .from("order_items")
           .select(
-            "id, order_id, quantity, unit_price, notes, menu_items(name)"
+            "id, order_id, quantity, unit_price, notes, special_name, bundle_id, menu_items(name)"
           )
           .in(
             "order_id",
@@ -472,6 +480,8 @@ export function TableDetailModal({
           quantity: number;
           unit_price: number;
           notes: string | null;
+          special_name: string | null;
+          bundle_id: string | null;
           menu_items:
             | { name: string }
             | { name: string }[]
@@ -493,6 +503,8 @@ export function TableDetailModal({
             quantity: row.quantity,
             unitPrice: row.unit_price,
             notes: row.notes,
+            specialName: row.special_name,
+            bundleId: row.bundle_id,
           });
         }
 

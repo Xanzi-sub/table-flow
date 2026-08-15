@@ -19,7 +19,7 @@ export default async function CustomerMenuPage({
 
   if (!table) notFound();
 
-  const [{ data: categories }, { data: items }, { data: groups }, { data: venue }, { data: waiterName }] =
+  const [{ data: categories }, { data: items }, { data: groups }, { data: venue }, { data: waiterName }, { data: specials }] =
     await Promise.all([
       supabase
         .from("menu_categories")
@@ -37,6 +37,7 @@ export default async function CustomerMenuPage({
         .select("name, logo_url, vat_percentage, tip_percentage, loyalty_reward_threshold, loyalty_reward_value")
         .maybeSingle(),
       supabase.rpc("get_table_waiter_name", { p_table_id: table.id }),
+      supabase.from("menu_specials").select("*").eq("status", "live").order("sort_order"),
     ]);
 
   const menuItems = items ?? [];
@@ -56,6 +57,7 @@ export default async function CustomerMenuPage({
       recommendationsByItem={recommendationsByItem}
       loyaltyRewardThreshold={venue?.loyalty_reward_threshold ?? 500}
       loyaltyRewardValue={venue?.loyalty_reward_value ?? 50}
+      specials={specials ?? []}
     />
   );
 }

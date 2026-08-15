@@ -65,6 +65,12 @@ const NAV_ITEMS: NavItem[] = [
     section: "management",
   },
   {
+    href: "/admin/specials",
+    label: "Specials",
+    roles: ["manager", "admin"],
+    section: "management",
+  },
+  {
     href: "/admin/menu-scan",
     label: "Menu Scan",
     roles: ["manager", "admin"],
@@ -263,6 +269,7 @@ function getNavIcon(label: string): IconName {
     case "Tips Cashouts":
       return "tips";
     case "Menu":
+    case "Specials":
       return "menu";
     case "Menu Scan":
       return "scan";
@@ -713,6 +720,7 @@ function getPageTitle(pathname: string) {
   if (pathname.startsWith("/admin/customers")) return "Customers";
   if (pathname.startsWith("/admin/tips")) return "Tips Cashouts";
   if (pathname.startsWith("/admin/menu-scan")) return "Menu Scan";
+  if (pathname.startsWith("/admin/specials")) return "Specials";
   if (pathname.startsWith("/admin/menu")) return "Menu";
   if (pathname.startsWith("/staff/marketing")) return "Marketing";
   if (pathname.startsWith("/admin/analytics")) return "Intelligence";

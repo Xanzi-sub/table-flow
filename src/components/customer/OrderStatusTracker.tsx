@@ -20,6 +20,8 @@ interface ReceiptLine {
   name: string;
   quantity: number;
   unitPrice: number;
+  specialName: string | null;
+  bundleId: string | null;
 }
 
 // Receipt is drawn at 3x this logical width then downscaled via CSS, so it
@@ -42,7 +44,8 @@ function drawReceipt(
   if (!ctx) return;
 
   const lineHeight = 22;
-  const height = 400 + lines.length * lineHeight;
+  const bundleCount = new Set(lines.map((line) => line.bundleId).filter(Boolean)).size;
+  const height = 400 + lines.length * lineHeight + bundleCount * 18;
 
   canvas.width = RECEIPT_WIDTH * SCALE;
   canvas.height = height * SCALE;
@@ -95,8 +98,18 @@ function drawReceipt(
   y += 24;
 
   ctx.font = "600 12px system-ui, -apple-system, sans-serif";
+  const shownBundles = new Set<string>();
   for (const line of lines) {
-    const label = `${line.quantity}x ${line.name}`;
+    if (line.bundleId && line.specialName && !shownBundles.has(line.bundleId)) {
+      ctx.textAlign = "left";
+      ctx.fillStyle = muted;
+      ctx.font = "700 10px system-ui, -apple-system, sans-serif";
+      ctx.fillText(line.specialName.toUpperCase(), 20, y);
+      y += 18;
+      shownBundles.add(line.bundleId);
+      ctx.font = "600 12px system-ui, -apple-system, sans-serif";
+    }
+    const label = `${line.quantity}x ${line.name}${!line.bundleId && line.specialName ? ` · ${line.specialName}` : ""}`;
     const price = formatCurrency(line.unitPrice * line.quantity);
     ctx.textAlign = "left";
     ctx.fillStyle = ink;
@@ -204,16 +217,24 @@ export function OrderStatusTracker({
 
     supabase
       .from("order_items")
-      .select("quantity, unit_price, menu_items(name)")
+      .select("quantity, unit_price, special_name, bundle_id, menu_items(name)")
       .eq("order_id", orderId)
       .then(({ data }) => {
-        type Row = { quantity: number; unit_price: number; menu_items: { name: string } | { name: string }[] | null };
+        type Row = {
+          quantity: number;
+          unit_price: number;
+          special_name: string | null;
+          bundle_id: string | null;
+          menu_items: { name: string } | { name: string }[] | null;
+        };
         const rows = (data ?? []) as Row[];
         setLines(
           rows.map((row) => ({
             name: Array.isArray(row.menu_items) ? row.menu_items[0]?.name ?? "Item" : row.menu_items?.name ?? "Item",
             quantity: row.quantity,
             unitPrice: row.unit_price,
+            specialName: row.special_name,
+            bundleId: row.bundle_id,
           }))
         );
       });

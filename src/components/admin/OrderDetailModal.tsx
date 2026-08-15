@@ -19,6 +19,8 @@ interface OrderLine {
   quantity: number;
   unitPrice: number;
   notes: string | null;
+  specialName: string | null;
+  bundleId: string | null;
 }
 
 export function OrderDetailModal({
@@ -49,7 +51,7 @@ export function OrderDetailModal({
     const supabase = createClient();
     supabase
       .from("order_items")
-      .select("id, quantity, unit_price, notes, menu_items(name)")
+      .select("id, quantity, unit_price, notes, special_name, bundle_id, menu_items(name)")
       .eq("order_id", orderId)
       .then(({ data }) => {
         type Row = {
@@ -57,6 +59,8 @@ export function OrderDetailModal({
           quantity: number;
           unit_price: number;
           notes: string | null;
+          special_name: string | null;
+          bundle_id: string | null;
           menu_items: { name: string } | { name: string }[] | null;
         };
         setLines(
@@ -66,6 +70,8 @@ export function OrderDetailModal({
             quantity: row.quantity,
             unitPrice: row.unit_price,
             notes: row.notes,
+            specialName: row.special_name,
+            bundleId: row.bundle_id,
           }))
         );
         setLoading(false);
@@ -119,6 +125,11 @@ export function OrderDetailModal({
                 <span className="font-medium text-[var(--foreground)]">
                   {line.quantity}x {line.name}
                 </span>
+                {line.specialName && (
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--warning-600)]">
+                    {line.bundleId ? `Combo · ${line.specialName}` : line.specialName}
+                  </p>
+                )}
                 {line.notes && <p className="text-xs text-[var(--foreground-muted)]">{line.notes}</p>}
               </div>
               <span className="text-[var(--foreground-muted)]">

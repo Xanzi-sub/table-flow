@@ -3,14 +3,27 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "./tables";
-import type { OrderStatus } from "@/types/database";
+import type { MenuItem, MenuSpecial, OrderStatus } from "@/types/database";
 
 export interface CartLine {
-  menuItemId: string;
+  kind: "item" | "combo";
+  menuItemId?: string;
+  specialId?: string;
   quantity: number;
   notes?: string;
-  unitPrice: number;
 }
+
+interface PricedOrderLine {
+  menu_item_id: string;
+  quantity: number;
+  notes: string | null;
+  unit_price: number;
+  bundle_id: string | null;
+  special_id: string | null;
+  special_name: string | null;
+}
+
+const roundMoney = (value: number) => Math.round(value * 100) / 100;
 
 /** Creates an order + its line items for the customer's own (RLS-verified) session. */
 export async function submitOrder(input: {
@@ -24,9 +37,95 @@ export async function submitOrder(input: {
   }
 
   const supabase = await createClient();
-  const totalAmount = input.items.reduce(
-    (sum, line) => sum + line.unitPrice * line.quantity,
-    0
+  const { data: activeSpecialRows, error: specialsError } = await supabase
+    .from("menu_specials")
+    .select("*")
+    .eq("status", "live");
+  if (specialsError) return { success: false, error: specialsError.message };
+
+  const activeSpecials = (activeSpecialRows ?? []) as MenuSpecial[];
+  const requestedSpecialIds = new Set(input.items.map((line) => line.specialId).filter(Boolean));
+  const requestedMenuItemIds = new Set(input.items.map((line) => line.menuItemId).filter(Boolean));
+  for (const special of activeSpecials) {
+    if (requestedSpecialIds.has(special.id) || special.kind === "item_discount") {
+      for (const itemId of special.item_ids) requestedMenuItemIds.add(itemId);
+    }
+  }
+
+  const { data: menuItemRows, error: menuItemsError } = await supabase
+    .from("menu_items")
+    .select("*")
+    .in("id", [...requestedMenuItemIds])
+    .eq("status", "live");
+  if (menuItemsError) return { success: false, error: menuItemsError.message };
+  const menuItemMap = new Map(((menuItemRows ?? []) as MenuItem[]).map((item) => [item.id, item]));
+  const specialMap = new Map(activeSpecials.map((special) => [special.id, special]));
+  const pricedLines: PricedOrderLine[] = [];
+
+  for (const inputLine of input.items) {
+    const quantity = Math.max(1, Math.min(99, Math.floor(inputLine.quantity)));
+
+    if (inputLine.kind === "combo") {
+      const special = inputLine.specialId ? specialMap.get(inputLine.specialId) : null;
+      if (!special || special.kind !== "combo") {
+        return { success: false, error: "A combo in your cart is no longer available. Please refresh the menu." };
+      }
+      const comboItems = special.item_ids.map((id) => menuItemMap.get(id));
+      if (comboItems.some((item) => !item)) {
+        return { success: false, error: `${special.name} contains an unavailable menu item.` };
+      }
+
+      const items = comboItems as MenuItem[];
+      const originalTotal = items.reduce((sum, item) => sum + item.price, 0);
+      const bundleId = crypto.randomUUID();
+      let allocated = 0;
+
+      items.forEach((item, index) => {
+        const unitPrice =
+          index === items.length - 1
+            ? roundMoney(special.discount_value - allocated)
+            : roundMoney(special.discount_value * (item.price / originalTotal));
+        allocated = roundMoney(allocated + unitPrice);
+        pricedLines.push({
+          menu_item_id: item.id,
+          quantity,
+          notes: inputLine.notes ?? null,
+          unit_price: Math.max(0, unitPrice),
+          bundle_id: bundleId,
+          special_id: special.id,
+          special_name: special.name,
+        });
+      });
+      continue;
+    }
+
+    if (!inputLine.menuItemId) return { success: false, error: "A cart item is missing its menu item." };
+    const item = menuItemMap.get(inputLine.menuItemId);
+    if (!item) return { success: false, error: "A menu item in your cart is no longer available." };
+    const offers = activeSpecials
+      .filter((special) => special.kind === "item_discount" && special.item_ids.includes(item.id))
+      .map((special) => ({
+        special,
+        price:
+          special.discount_type === "percentage"
+            ? roundMoney(item.price * (1 - special.discount_value / 100))
+            : Math.min(item.price, special.discount_value),
+      }))
+      .sort((first, second) => first.price - second.price);
+    const best = offers[0];
+    pricedLines.push({
+      menu_item_id: item.id,
+      quantity,
+      notes: inputLine.notes ?? null,
+      unit_price: Math.max(0, best?.price ?? item.price),
+      bundle_id: null,
+      special_id: best?.special.id ?? null,
+      special_name: best?.special.name ?? null,
+    });
+  }
+
+  const totalAmount = roundMoney(
+    pricedLines.reduce((sum, line) => sum + line.unit_price * line.quantity, 0)
   );
 
   const { data: order, error: orderError } = await supabase
@@ -47,16 +146,14 @@ export async function submitOrder(input: {
   }
 
   const { error: itemsError } = await supabase.from("order_items").insert(
-    input.items.map((line) => ({
+    pricedLines.map((line) => ({
       order_id: order.id,
-      menu_item_id: line.menuItemId,
-      quantity: line.quantity,
-      notes: line.notes ?? null,
-      unit_price: line.unitPrice,
+      ...line,
     }))
   );
 
   if (itemsError) {
+    await supabase.from("orders").delete().eq("id", order.id);
     return { success: false, error: itemsError.message };
   }
 

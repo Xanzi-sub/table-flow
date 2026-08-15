@@ -6,6 +6,7 @@ import type {
   MenuCategory,
   MenuCategoryGroup,
   MenuItem,
+  MenuSpecial,
   TableRow,
 } from "@/types/database";
 import { CartProvider, useCart } from "@/context/CartContext";
@@ -41,6 +42,7 @@ interface CustomerMenuAppProps {
   recommendationsByItem: Record<string, MenuItem[]>;
   loyaltyRewardThreshold: number;
   loyaltyRewardValue: number;
+  specials: MenuSpecial[];
 }
 
 /* -------------------------------------------------------------------------- */
@@ -183,6 +185,55 @@ function CartFab({ onOpen }: { onOpen: () => void }) {
   );
 }
 
+function SpecialsRail({ specials, items }: { specials: MenuSpecial[]; items: MenuItem[] }) {
+  const { addCombo } = useCart();
+  const itemMap = useMemo(() => new Map(items.map((item) => [item.id, item])), [items]);
+  const combos = specials.filter((special) => special.kind === "combo");
+  if (combos.length === 0) return null;
+
+  return (
+    <section className="shrink-0 border-b border-[#e7e2da] bg-[#f5f1eb] px-4 py-4">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#99938a]">Specials</p>
+      <h2 className="mt-0.5 text-[17px] font-bold text-[#171614]">Paired offers</h2>
+      <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
+        {combos.map((special) => {
+          const comboItems = special.item_ids
+            .map((id) => itemMap.get(id))
+            .filter((item): item is MenuItem => Boolean(item));
+          const regularTotal = comboItems.reduce((sum, item) => sum + item.price, 0);
+          return (
+            <article key={special.id} className="min-w-[270px] rounded-[18px] border border-[#e2dbd1] bg-white p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <span className="rounded-full bg-[#171614] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.1em] text-white">Combo</span>
+                  <h3 className="mt-2 truncate text-[14px] font-bold text-[#171614]">{special.name}</h3>
+                  <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-[#77736d]">
+                    {special.description || comboItems.map((item) => item.name).join(" + ")}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-[15px] font-bold text-[#171614]">{formatCurrency(special.discount_value)}</p>
+                  {regularTotal > special.discount_value && (
+                    <p className="text-[10px] text-[#aaa49b] line-through">{formatCurrency(regularTotal)}</p>
+                  )}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => addCombo(special, comboItems)}
+                disabled={comboItems.length < 2}
+                className="mt-3 w-full rounded-full bg-[#171614] py-2 text-[11px] font-semibold text-white disabled:opacity-40"
+              >
+                Add combo
+              </button>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 /* -------------------------------------------------------------------------- */
 /* Menu browser                                                              */
 /* -------------------------------------------------------------------------- */
@@ -191,11 +242,13 @@ function MenuBrowser({
   categories,
   items,
   groups,
+  specials,
   onSelectItem,
 }: {
   categories: MenuCategory[];
   items: MenuItem[];
   groups: MenuCategoryGroup[];
+  specials: MenuSpecial[];
   onSelectItem: (item: MenuItem) => void;
 }) {
   const groupedByGroup = useMemo(() => {
@@ -284,6 +337,7 @@ function MenuBrowser({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-[#fafaf9]">
+      <SpecialsRail specials={specials} items={items} />
       {/* Group navigation */}
       {groupedByGroup.length > 1 && (
         <div className="shrink-0 border-b border-neutral-200/80 bg-white">
@@ -427,6 +481,7 @@ function MenuAppContent({
   recommendationsByItem,
   loyaltyRewardThreshold,
   loyaltyRewardValue,
+  specials,
 }: CustomerMenuAppProps) {
   const [identity, setIdentity] = useState<{
     userId: string;
@@ -666,6 +721,7 @@ function MenuAppContent({
             categories={categories}
             items={items}
             groups={groups}
+            specials={specials}
             onSelectItem={setSelectedItem}
           />
         )}
@@ -820,7 +876,7 @@ function MenuAppContent({
 
 export function CustomerMenuApp(props: CustomerMenuAppProps) {
   return (
-    <CartProvider>
+    <CartProvider specials={props.specials}>
       <MenuAppContent {...props} />
     </CartProvider>
   );

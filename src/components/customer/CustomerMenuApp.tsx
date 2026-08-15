@@ -536,7 +536,7 @@ function MenuAppContent({
 
   return (
     <MobileContainer>
-      <div className="relative flex h-full min-h-screen flex-col overflow-hidden bg-[#fafaf9]">
+      <div className="relative flex h-full flex-col overflow-hidden bg-[#fafaf9]">
         {/* ---------------------------------------------------------------- */}
         {/* Venue header                                                     */}
         {/* ---------------------------------------------------------------- */}

@@ -70,6 +70,8 @@ export async function saveVenueSettings(input: {
   logoUrl?: string;
   address?: string;
   phone?: string;
+  vatPercentage?: number;
+  tipPercentage?: number;
 }): Promise<ActionResult> {
   const supabase = await createClient();
   const existing = await getVenueSettings();
@@ -79,6 +81,8 @@ export async function saveVenueSettings(input: {
     logo_url: input.logoUrl ?? null,
     address: input.address ?? null,
     phone: input.phone ?? null,
+    ...(input.vatPercentage !== undefined ? { vat_percentage: input.vatPercentage } : {}),
+    ...(input.tipPercentage !== undefined ? { tip_percentage: input.tipPercentage } : {}),
   };
 
   const { error } = existing

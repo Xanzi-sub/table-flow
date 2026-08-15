@@ -21,79 +21,140 @@ interface ReceiptLine {
   unitPrice: number;
 }
 
-const RECEIPT_WIDTH = 480;
+// Receipt is drawn at 3x this logical width then downscaled via CSS, so it
+// stays crisp on high-DPI phone screens instead of looking soft/blurry.
+const RECEIPT_WIDTH = 380;
+const SCALE = 3;
 
-/** Draws a plain, printable receipt (venue, order #, itemized lines, total) as a PNG. */
+/** Draws a proper itemized receipt: subtotal, VAT breakdown, suggested tip, waiter, payment status. */
 function drawReceipt(
   canvas: HTMLCanvasElement,
   venueName: string,
   tableNumber: number | null,
+  waiterName: string | null,
+  vatPercentage: number,
+  tipPercentage: number,
   order: Order,
   lines: ReceiptLine[]
 ) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
-  const lineHeight = 26;
-  const height = 260 + lines.length * lineHeight;
-  canvas.width = RECEIPT_WIDTH;
-  canvas.height = height;
+  const lineHeight = 22;
+  const height = 400 + lines.length * lineHeight;
+
+  canvas.width = RECEIPT_WIDTH * SCALE;
+  canvas.height = height * SCALE;
+  canvas.style.width = `${RECEIPT_WIDTH}px`;
+  canvas.style.height = `${height}px`;
+  ctx.scale(SCALE, SCALE);
+
+  const ink = "#14161d";
+  const muted = "#6b7385";
+  const border = "#dfe2e8";
+  const dashed = () => {
+    ctx.save();
+    ctx.setLineDash([4, 3]);
+    ctx.strokeStyle = border;
+    ctx.beginPath();
+    ctx.moveTo(20, y);
+    ctx.lineTo(RECEIPT_WIDTH - 20, y);
+    ctx.stroke();
+    ctx.restore();
+  };
 
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, RECEIPT_WIDTH, height);
-  ctx.strokeStyle = "#dfe2e8";
-  ctx.strokeRect(1, 1, RECEIPT_WIDTH - 2, height - 2);
+  ctx.strokeStyle = border;
+  ctx.strokeRect(0.5, 0.5, RECEIPT_WIDTH - 1, height - 1);
 
+  let y = 36;
   ctx.textAlign = "center";
-  ctx.fillStyle = "#14161d";
-  ctx.font = "bold 28px system-ui, -apple-system, sans-serif";
-  ctx.fillText(venueName || "TableFlow", RECEIPT_WIDTH / 2, 50);
+  ctx.fillStyle = ink;
+  ctx.font = "bold 20px system-ui, -apple-system, sans-serif";
+  ctx.fillText(venueName || "TableFlow", RECEIPT_WIDTH / 2, y);
 
-  ctx.font = "500 14px system-ui, -apple-system, sans-serif";
-  ctx.fillStyle = "#6b7385";
+  y += 20;
+  ctx.font = "500 11px system-ui, -apple-system, sans-serif";
+  ctx.fillStyle = muted;
   ctx.fillText(
     `Order #${order.id.slice(0, 8).toUpperCase()}${tableNumber ? ` · Table ${tableNumber}` : ""}`,
     RECEIPT_WIDTH / 2,
-    76
+    y
   );
-  ctx.fillText(formatDateTime(order.created_at), RECEIPT_WIDTH / 2, 96);
+  y += 16;
+  ctx.fillText(formatDateTime(order.created_at), RECEIPT_WIDTH / 2, y);
+  if (waiterName) {
+    y += 16;
+    ctx.fillText(`Served by ${waiterName}`, RECEIPT_WIDTH / 2, y);
+  }
 
-  ctx.beginPath();
-  ctx.moveTo(30, 116);
-  ctx.lineTo(RECEIPT_WIDTH - 30, 116);
-  ctx.strokeStyle = "#dfe2e8";
-  ctx.stroke();
+  y += 18;
+  dashed();
+  y += 24;
 
-  ctx.textAlign = "left";
-  ctx.fillStyle = "#14161d";
-  ctx.font = "600 15px system-ui, -apple-system, sans-serif";
-  let y = 148;
+  ctx.font = "600 12px system-ui, -apple-system, sans-serif";
   for (const line of lines) {
     const label = `${line.quantity}x ${line.name}`;
     const price = formatCurrency(line.unitPrice * line.quantity);
     ctx.textAlign = "left";
-    ctx.fillText(label, 30, y, RECEIPT_WIDTH - 140);
+    ctx.fillStyle = ink;
+    ctx.fillText(label, 20, y, RECEIPT_WIDTH - 110);
     ctx.textAlign = "right";
-    ctx.fillText(price, RECEIPT_WIDTH - 30, y);
+    ctx.fillStyle = muted;
+    ctx.fillText(price, RECEIPT_WIDTH - 20, y);
     y += lineHeight;
   }
 
-  ctx.beginPath();
-  ctx.moveTo(30, y + 6);
-  ctx.lineTo(RECEIPT_WIDTH - 30, y + 6);
-  ctx.strokeStyle = "#dfe2e8";
-  ctx.stroke();
+  y += 4;
+  dashed();
+  y += 22;
 
-  ctx.font = "bold 20px system-ui, -apple-system, sans-serif";
+  const vatAmount = order.total_amount - order.total_amount / (1 + vatPercentage / 100);
+  const subtotal = order.total_amount - vatAmount;
+  const suggestedTip = order.total_amount * (tipPercentage / 100);
+
+  ctx.font = "500 11px system-ui, -apple-system, sans-serif";
+  const row = (label: string, value: string, boldValue = false) => {
+    ctx.textAlign = "left";
+    ctx.fillStyle = muted;
+    ctx.fillText(label, 20, y);
+    ctx.textAlign = "right";
+    ctx.fillStyle = boldValue ? ink : muted;
+    ctx.font = boldValue ? "700 11px system-ui, -apple-system, sans-serif" : "500 11px system-ui, -apple-system, sans-serif";
+    ctx.fillText(value, RECEIPT_WIDTH - 20, y);
+    ctx.font = "500 11px system-ui, -apple-system, sans-serif";
+    y += 18;
+  };
+
+  row("Subtotal", formatCurrency(subtotal));
+  row(`VAT (${vatPercentage}%, incl.)`, formatCurrency(vatAmount));
+  y += 6;
+  dashed();
+  y += 22;
+
   ctx.textAlign = "left";
-  ctx.fillText("Total", 30, y + 40);
+  ctx.fillStyle = ink;
+  ctx.font = "bold 15px system-ui, -apple-system, sans-serif";
+  ctx.fillText("Total", 20, y);
   ctx.textAlign = "right";
-  ctx.fillText(formatCurrency(order.total_amount), RECEIPT_WIDTH - 30, y + 40);
+  ctx.fillText(formatCurrency(order.total_amount), RECEIPT_WIDTH - 20, y);
+  y += 24;
+
+  if (tipPercentage > 0) {
+    row(`Suggested tip (${tipPercentage}%)`, formatCurrency(suggestedTip));
+  }
+  row("Payment method", order.payment_method ? order.payment_method.replace("_", " ") : "—");
+  row("Payment status", order.payment_status === "paid" ? "Paid" : "Unpaid");
+
+  y += 6;
+  dashed();
+  y += 24;
 
   ctx.textAlign = "center";
-  ctx.font = "500 14px system-ui, -apple-system, sans-serif";
-  ctx.fillStyle = "#6b7385";
-  ctx.fillText("Thank you for your order!", RECEIPT_WIDTH / 2, y + 80);
+  ctx.font = "500 11px system-ui, -apple-system, sans-serif";
+  ctx.fillStyle = muted;
+  ctx.fillText("Thank you for your order!", RECEIPT_WIDTH / 2, y);
 }
 
 export function OrderStatusTracker({
@@ -101,17 +162,23 @@ export function OrderStatusTracker({
   tableId,
   venueName,
   tableNumber,
+  vatPercentage,
+  tipPercentage,
+  waiterName,
   onClose,
 }: {
   orderId: string;
   tableId: string;
   venueName: string;
   tableNumber: number | null;
+  vatPercentage: number;
+  tipPercentage: number;
+  waiterName: string | null;
   onClose: () => void;
 }) {
   const [order, setOrder] = useState<Order | null>(null);
   const [lines, setLines] = useState<ReceiptLine[]>([]);
-  const [requested, setRequested] = useState(false);
+  const [requesting, setRequesting] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -161,14 +228,17 @@ export function OrderStatusTracker({
 
   useEffect(() => {
     if (order && lines.length > 0 && canvasRef.current) {
-      drawReceipt(canvasRef.current, venueName, tableNumber, order, lines);
+      drawReceipt(canvasRef.current, venueName, tableNumber, waiterName, vatPercentage, tipPercentage, order, lines);
     }
-  }, [order, lines, venueName, tableNumber]);
+  }, [order, lines, venueName, tableNumber, waiterName, vatPercentage, tipPercentage]);
 
   const activeIndex = order ? STEPS.indexOf(order.status) : 0;
+  // Re-enable automatically once staff mark the bill paid — no need to
+  // close/reopen this modal to request again for a later round.
+  const requested = order?.payment_status !== "paid" && requesting;
 
   async function handleRequest() {
-    setRequested(true);
+    setRequesting(true);
     await requestTableService(tableId);
   }
 
@@ -255,7 +325,7 @@ export function OrderStatusTracker({
 
         {order && lines.length > 0 && (
           <div className="mt-4 flex flex-col items-center gap-3 rounded-xl border border-neutral-200 p-4">
-            <canvas ref={canvasRef} className="w-full max-w-[260px] rounded-lg" />
+            <canvas ref={canvasRef} className="w-full max-w-[300px] rounded-lg" />
             <button
               onClick={handleDownloadReceipt}
               className="w-full rounded-xl border border-neutral-900 py-2.5 text-sm font-semibold text-neutral-900"
@@ -276,3 +346,4 @@ export function OrderStatusTracker({
     </div>
   );
 }
+

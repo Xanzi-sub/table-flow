@@ -26,6 +26,9 @@ interface CustomerMenuAppProps {
   groups: MenuCategoryGroup[];
   venueName: string;
   venueLogoUrl: string | null;
+  vatPercentage: number;
+  tipPercentage: number;
+  waiterName: string | null;
 }
 
 function CartButton({ onOpen }: { onOpen: () => void }) {
@@ -185,7 +188,7 @@ function MenuBrowser({
   );
 }
 
-function MenuAppContent({ table, categories, items, groups, venueName, venueLogoUrl }: CustomerMenuAppProps) {
+function MenuAppContent({ table, categories, items, groups, venueName, venueLogoUrl, vatPercentage, tipPercentage, waiterName }: CustomerMenuAppProps) {
   const [identity, setIdentity] = useState<{
     userId: string;
     customerId: string | null;
@@ -326,6 +329,9 @@ function MenuAppContent({ table, categories, items, groups, venueName, venueLogo
           tableId={table.id}
           venueName={venueName}
           tableNumber={table.table_number}
+          vatPercentage={vatPercentage}
+          tipPercentage={tipPercentage}
+          waiterName={waiterName}
           onClose={() => setViewingOrderId(null)}
         />
       )}

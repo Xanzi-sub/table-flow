@@ -29,6 +29,12 @@ const NAV_ITEMS: NavItem[] = [
     section: "operations",
   },
   {
+    href: "/staff/tips",
+    label: "Tips",
+    roles: ["waiter"],
+    section: "operations",
+  },
+  {
     href: "/admin/tables",
     label: "Tables & QR",
     roles: ["manager", "admin"],
@@ -43,6 +49,12 @@ const NAV_ITEMS: NavItem[] = [
   {
     href: "/admin/customers",
     label: "Customers",
+    roles: ["manager", "admin"],
+    section: "operations",
+  },
+  {
+    href: "/admin/tips",
+    label: "Tips Cashouts",
     roles: ["manager", "admin"],
     section: "operations",
   },
@@ -93,6 +105,7 @@ type IconName =
   | "orders"
   | "tables"
   | "customers"
+  | "tips"
   | "menu"
   | "scan"
   | "marketing"
@@ -147,6 +160,15 @@ function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
         <svg {...common}>
           <circle cx="12" cy="8" r="3.5" />
           <path d="M5 21c.7-4 3-6 7-6s6.3 2 7 6" />
+        </svg>
+      );
+
+    case "tips":
+      return (
+        <svg {...common}>
+          <circle cx="8" cy="9" r="5" />
+          <circle cx="15" cy="15" r="5" />
+          <path d="M8 9h.01M15 15h.01" />
         </svg>
       );
 
@@ -237,6 +259,9 @@ function getNavIcon(label: string): IconName {
       return "tables";
     case "Customers":
       return "customers";
+    case "Tips":
+    case "Tips Cashouts":
+      return "tips";
     case "Menu":
       return "menu";
     case "Menu Scan":
@@ -681,9 +706,11 @@ function NavigationGroup({
 function getPageTitle(pathname: string) {
   if (pathname === "/staff/dashboard") return "Live Floor";
   if (pathname.startsWith("/staff/orders")) return "Orders";
+  if (pathname.startsWith("/staff/tips")) return "Tips";
   if (pathname.startsWith("/admin/tables")) return "Tables & QR";
   if (pathname.startsWith("/admin/orders")) return "Orders";
   if (pathname.startsWith("/admin/customers")) return "Customers";
+  if (pathname.startsWith("/admin/tips")) return "Tips Cashouts";
   if (pathname.startsWith("/admin/menu-scan")) return "Menu Scan";
   if (pathname.startsWith("/admin/menu")) return "Menu";
   if (pathname.startsWith("/staff/marketing")) return "Marketing";

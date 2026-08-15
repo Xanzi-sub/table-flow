@@ -15,6 +15,8 @@ export function SettingsManager({ venue }: { venue: VenueSettings | null }) {
   const [name, setName] = useState(venue?.name ?? "");
   const [address, setAddress] = useState(venue?.address ?? "");
   const [phone, setPhone] = useState(venue?.phone ?? "");
+  const [vatPercentage, setVatPercentage] = useState((venue?.vat_percentage ?? 15).toString());
+  const [tipPercentage, setTipPercentage] = useState((venue?.tip_percentage ?? 10).toString());
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoUrl, setLogoUrl] = useState(venue?.logo_url ?? null);
   const [saving, setSaving] = useState(false);
@@ -45,7 +47,14 @@ export function SettingsManager({ venue }: { venue: VenueSettings | null }) {
         setLogoUrl(uploadedLogoUrl);
       }
 
-      const result = await saveVenueSettings({ name, address, phone, logoUrl: uploadedLogoUrl });
+      const result = await saveVenueSettings({
+        name,
+        address,
+        phone,
+        logoUrl: uploadedLogoUrl,
+        vatPercentage: Number(vatPercentage) || 0,
+        tipPercentage: Number(tipPercentage) || 0,
+      });
       if (!result.success) throw new Error(result.error ?? "Could not save venue details");
 
       setSaved(true);
@@ -125,6 +134,34 @@ export function SettingsManager({ venue }: { venue: VenueSettings | null }) {
                   className="block flex-1 text-sm text-[var(--foreground-muted)] file:mr-3 file:rounded-md file:border-0 file:bg-[var(--gray-100)] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-[var(--foreground)]"
                 />
               </div>
+            </label>
+            <label className="text-sm">
+              <span className="label">VAT / tax percentage</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={vatPercentage}
+                onChange={(e) => setVatPercentage(e.target.value)}
+                className="input"
+              />
+              <p className="mt-1 text-xs text-[var(--foreground-muted)]">
+                Menu prices are treated as VAT-inclusive — this only shows the tax breakdown on receipts.
+              </p>
+            </label>
+            <label className="text-sm">
+              <span className="label">Suggested tip percentage</span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={tipPercentage}
+                onChange={(e) => setTipPercentage(e.target.value)}
+                className="input"
+              />
+              <p className="mt-1 text-xs text-[var(--foreground-muted)]">
+                Shown as a reference on receipts — never changes what&apos;s charged.
+              </p>
             </label>
           </div>
 

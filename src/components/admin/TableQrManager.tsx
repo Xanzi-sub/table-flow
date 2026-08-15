@@ -256,6 +256,7 @@ export function TableQrManager({
         section: newSection || null,
         status: "vacant",
         current_waiter_id: null,
+        service_requested_at: null,
         updated_at: new Date().toISOString(),
       },
     ]);

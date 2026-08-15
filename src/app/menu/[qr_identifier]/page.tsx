@@ -18,20 +18,22 @@ export default async function CustomerMenuPage({
 
   if (!table) notFound();
 
-  const [{ data: categories }, { data: items }, { data: groups }, { data: venue }] = await Promise.all([
-    supabase
-      .from("menu_categories")
-      .select("*")
-      .eq("is_active", true)
-      .order("sort_order"),
-    supabase
-      .from("menu_items")
-      .select("*")
-      .eq("status", "live")
-      .order("sort_order"),
-    supabase.from("menu_category_groups").select("*").order("sort_order"),
-    supabase.from("venue_settings").select("name, logo_url").maybeSingle(),
-  ]);
+  const [{ data: categories }, { data: items }, { data: groups }, { data: venue }, { data: waiterName }] =
+    await Promise.all([
+      supabase
+        .from("menu_categories")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order"),
+      supabase
+        .from("menu_items")
+        .select("*")
+        .eq("status", "live")
+        .order("sort_order"),
+      supabase.from("menu_category_groups").select("*").order("sort_order"),
+      supabase.from("venue_settings").select("name, logo_url, vat_percentage, tip_percentage").maybeSingle(),
+      supabase.rpc("get_table_waiter_name", { p_table_id: table.id }),
+    ]);
 
   return (
     <CustomerMenuApp
@@ -41,6 +43,9 @@ export default async function CustomerMenuPage({
       groups={groups ?? []}
       venueName={venue?.name ?? "TableFlow"}
       venueLogoUrl={venue?.logo_url ?? null}
+      vatPercentage={venue?.vat_percentage ?? 15}
+      tipPercentage={venue?.tip_percentage ?? 10}
+      waiterName={waiterName ?? null}
     />
   );
 }

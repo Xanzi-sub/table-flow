@@ -156,20 +156,63 @@ export async function reassignTableWaiter(
  * kitchen/order status. The order stays open (and the table stays "dining")
  * until staff explicitly advances it to "completed" via updateOrderStatus,
  * which is what actually frees up the table.
+ *
+ * tipAmount is the ACTUAL amount staff received (cash handed over, or the
+ * card tip confirmed on the Speedpoint slip) — not the suggested percentage
+ * shown on the receipt. It's what funds the waiter's tips cash-out ledger,
+ * so it's stamped onto a single order (never split/duplicated across the
+ * table's other open orders).
  */
 export async function markTablePaid(
   tableId: string,
-  method: PaymentMethod
+  method: PaymentMethod,
+  tipAmount: number = 0
 ): Promise<ActionResult> {
   const supabase = await createClient();
+
+  const { data: openOrders, error: fetchError } = await supabase
+    .from("orders")
+    .select("id")
+    .eq("table_id", tableId)
+    .in("status", ["pending", "preparing", "served"])
+    .order("created_at", { ascending: true });
+
+  if (fetchError) return { success: false, error: fetchError.message };
+  if (!openOrders || openOrders.length === 0) {
+    return { success: false, error: "No open orders to mark as paid." };
+  }
 
   const { error: ordersError } = await supabase
     .from("orders")
     .update({ payment_status: "paid", payment_method: method })
-    .eq("table_id", tableId)
-    .in("status", ["pending", "preparing", "served"]);
+    .in(
+      "id",
+      openOrders.map((o) => o.id)
+    );
 
   if (ordersError) return { success: false, error: ordersError.message };
+
+  if (tipAmount > 0) {
+    const { error: tipError } = await supabase
+      .from("orders")
+      .update({ tip_amount: tipAmount })
+      .eq("id", openOrders[0].id);
+    if (tipError) return { success: false, error: tipError.message };
+  }
+
+  revalidatePath("/staff/dashboard");
+  return { success: true };
+}
+
+/** Clears the "customer needs help" alert — waiters resolve their own table's request, managers/admins can resolve any. */
+export async function resolveServiceRequest(tableId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("tables")
+    .update({ service_requested_at: null })
+    .eq("id", tableId);
+
+  if (error) return { success: false, error: error.message };
 
   revalidatePath("/staff/dashboard");
   return { success: true };

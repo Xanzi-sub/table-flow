@@ -5,9 +5,10 @@ import { createClient } from "@/lib/supabase/client";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { updateOrderStatus } from "@/app/actions/orders";
 import {
-  markTablePaid,
+  resolveServiceRequest,
   reassignTableWaiter,
 } from "@/app/actions/tables";
+import { MarkPaidDialog } from "./MarkPaidDialog";
 import { Select } from "@/components/ui/Select";
 import type {
   Order,
@@ -123,28 +124,8 @@ function OrderCard({
     }
   }
 
-  async function handleMarkPaid(
-    method: "cash" | "speedpoint"
-  ) {
-    if (payingWith) return;
-
-    setPayingWith(method);
-    setPayError(null);
-
-    const result = await markTablePaid(
-      order.table_id,
-      method
-    );
-
+  function handlePaymentSuccess() {
     setPayingWith(null);
-
-    if (!result.success) {
-      setPayError(
-        result.error ?? "Could not record payment."
-      );
-      return;
-    }
-
     setPaymentComplete(true);
     onPaymentComplete?.();
 
@@ -274,23 +255,19 @@ function OrderCard({
           {order.payment_status !== "paid" && (
             <>
               <button
-                onClick={() => handleMarkPaid("cash")}
+                onClick={() => setPayingWith("cash")}
                 disabled={payingWith !== null}
                 className="h-8 border border-[#D9DDE2] bg-white px-3 text-[9px] font-medium text-[#555C66] transition-colors hover:bg-[#F4F5F7] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {payingWith === "cash"
-                  ? "Processing..."
-                  : "Cash"}
+                Cash
               </button>
 
               <button
-                onClick={() => handleMarkPaid("speedpoint")}
+                onClick={() => setPayingWith("speedpoint")}
                 disabled={payingWith !== null}
                 className="h-8 border border-[#D9DDE2] bg-white px-3 text-[9px] font-medium text-[#555C66] transition-colors hover:bg-[#F4F5F7] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {payingWith === "speedpoint"
-                  ? "Processing..."
-                  : "Card"}
+                Card
               </button>
             </>
           )}
@@ -315,6 +292,14 @@ function OrderCard({
           </button>
         )}
       </div>
+
+      <MarkPaidDialog
+        open={payingWith !== null}
+        tableId={order.table_id}
+        method={payingWith ?? "cash"}
+        onClose={() => setPayingWith(null)}
+        onSuccess={handlePaymentSuccess}
+      />
     </article>
   );
 }
@@ -438,6 +423,13 @@ export function TableDetailModal({
     Record<string, string>
   >({});
   const [loading, setLoading] = useState(true);
+  const [resolvingRequest, setResolvingRequest] = useState(false);
+
+  async function handleResolveRequest() {
+    setResolvingRequest(true);
+    await resolveServiceRequest(table.id);
+    setResolvingRequest(false);
+  }
 
   useEffect(() => {
     const supabase = createClient();
@@ -675,15 +667,25 @@ export function TableDetailModal({
             />
           )}
 
-          {/* Bill request */}
-          {table.status === "awaiting_bill" && (
+          {/* Service request */}
+          {table.service_requested_at && (
             <div className="border-b border-[#E8DDBF] bg-[#FFFBF1] px-5 py-3.5">
-              <div className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />
 
-                <span className="text-[10px] font-semibold text-[#80651D]">
-                  Customer requested the bill
-                </span>
+                  <span className="text-[10px] font-semibold text-[#80651D]">
+                    Waiter requested
+                  </span>
+                </div>
+
+                <button
+                  onClick={handleResolveRequest}
+                  disabled={resolvingRequest}
+                  className="text-[9px] font-semibold text-[#2556C8] hover:underline disabled:opacity-50"
+                >
+                  {resolvingRequest ? "Resolving..." : "Resolve"}
+                </button>
               </div>
 
               <p className="mt-1.5 pl-3.5 text-[9px] text-[#9A7C2B]">

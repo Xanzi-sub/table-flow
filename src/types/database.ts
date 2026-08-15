@@ -37,6 +37,8 @@ export interface VenueSettings {
   logo_url: string | null;
   address: string | null;
   phone: string | null;
+  vat_percentage: number;
+  tip_percentage: number;
   zendio_account_id: string | null;
   zendio_account_label: string | null;
   zendio_profile_id: string | null;
@@ -63,6 +65,7 @@ export interface TableRow {
   section: string | null;
   status: TableStatus;
   current_waiter_id: string | null;
+  service_requested_at: string | null;
   updated_at: string;
 }
 
@@ -128,6 +131,8 @@ export interface Order {
   customer_session_id: string;
   customer_id: string | null;
   total_amount: number;
+  tip_amount: number;
+  tip_cashout_request_id: string | null;
   created_at: string;
 }
 
@@ -150,6 +155,20 @@ export interface MarketingCampaign {
   created_at: string;
 }
 
+export type TipCashoutStatus = "pending" | "scheduled" | "approved" | "rejected";
+
+export interface TipCashoutRequest {
+  id: string;
+  waiter_id: string;
+  amount: number;
+  status: TipCashoutStatus;
+  scheduled_for: string | null;
+  notes: string | null;
+  requested_at: string;
+  resolved_at: string | null;
+  resolved_by: string | null;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -163,6 +182,7 @@ export interface Database {
       orders: { Row: Order; Insert: Partial<Order> & { table_id: string; customer_session_id: string; total_amount: number }; Update: Partial<Order>; Relationships: [] };
       order_items: { Row: OrderItem; Insert: Partial<OrderItem> & { order_id: string; menu_item_id: string; quantity: number; unit_price: number }; Update: Partial<OrderItem>; Relationships: [] };
       marketing_campaigns: { Row: MarketingCampaign; Insert: Partial<MarketingCampaign> & { title: string; message_body: string }; Update: Partial<MarketingCampaign>; Relationships: [] };
+      tip_cashout_requests: { Row: TipCashoutRequest; Insert: Partial<TipCashoutRequest> & { waiter_id: string; amount: number }; Update: Partial<TipCashoutRequest>; Relationships: [] };
       venue_settings: { Row: VenueSettings; Insert: Partial<VenueSettings> & { name: string }; Update: Partial<VenueSettings>; Relationships: [] };
       staff_invites: { Row: StaffInvite; Insert: Partial<StaffInvite> & { email: string; full_name: string }; Update: Partial<StaffInvite>; Relationships: [] };
     };
@@ -185,6 +205,7 @@ export interface Database {
       };
       staff_profiles_is_empty: { Args: Record<string, never>; Returns: boolean };
       request_table_service: { Args: { p_table_id: string }; Returns: undefined };
+      get_table_waiter_name: { Args: { p_table_id: string }; Returns: string | null };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

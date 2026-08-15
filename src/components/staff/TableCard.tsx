@@ -1,7 +1,8 @@
 "use client";
 
 import type { TableRow } from "@/types/database";
-import { markTablePaid } from "@/app/actions/tables";
+import { resolveServiceRequest } from "@/app/actions/tables";
+import { MarkPaidDialog } from "./MarkPaidDialog";
 import { useState } from "react";
 
 const STATUS_LABEL: Record<TableRow["status"], string> = {
@@ -39,32 +40,22 @@ export function TableCard({
   onOpenDetail: () => void;
 }) {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [justPaid, setJustPaid] = useState(false);
+  const [payingWith, setPayingWith] = useState<"cash" | "speedpoint" | null>(null);
 
   const needsAttention =
-    hasNewOrder || table.status === "awaiting_bill";
+    hasNewOrder || table.status === "awaiting_bill" || Boolean(table.service_requested_at);
 
-  async function handleMarkPaid(
-    method: "cash" | "speedpoint"
-  ) {
+  async function handleResolveRequest() {
     setLoading(true);
-    setError(null);
-
-    const result = await markTablePaid(table.id, method);
-
+    await resolveServiceRequest(table.id);
     setLoading(false);
+  }
 
-    if (!result.success) {
-      setError(result.error ?? "Could not mark as paid");
-      return;
-    }
-
+  function handlePaymentSuccess() {
+    setPayingWith(null);
     setJustPaid(true);
-
-    setTimeout(() => {
-      setJustPaid(false);
-    }, 2000);
+    setTimeout(() => setJustPaid(false), 2000);
   }
 
   return (
@@ -145,15 +136,29 @@ export function TableCard({
         </div>
       )}
 
-      {justPaid && (
-        <div className="absolute bottom-4 left-4 right-4 border-t border-[#E9EBEE] pt-3 text-[9px] font-medium text-emerald-600">
-          Payment recorded
+      {table.service_requested_at && (
+        <div
+          className="absolute bottom-4 left-4 right-4 flex items-center justify-between border-t border-[#E9EBEE] pt-3"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <span className="flex items-center gap-2 text-[9px] font-medium text-[#B4271A]">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#DC2626]" />
+            Waiter requested
+          </span>
+
+          <button
+            onClick={handleResolveRequest}
+            disabled={loading}
+            className="font-mono text-[8px] font-semibold text-[#2556C8] hover:underline"
+          >
+            RESOLVE
+          </button>
         </div>
       )}
 
-      {error && (
-        <div className="absolute bottom-4 left-4 right-4 border-t border-[#E9EBEE] pt-3 text-[9px] font-medium text-red-600">
-          {error}
+      {justPaid && (
+        <div className="absolute bottom-4 left-4 right-4 border-t border-[#E9EBEE] pt-3 text-[9px] font-medium text-emerald-600">
+          Payment recorded
         </div>
       )}
 
@@ -167,19 +172,19 @@ export function TableCard({
             onClick={(event) => event.stopPropagation()}
           >
             <button
-              onClick={() => handleMarkPaid("cash")}
+              onClick={() => setPayingWith("cash")}
               disabled={loading}
               className="h-7 flex-1 border border-[#D9DDE2] bg-white text-[9px] font-medium text-[#555C66] transition-colors hover:bg-[#F4F5F7] disabled:opacity-50"
             >
-              {loading ? "..." : "Cash"}
+              Cash
             </button>
 
             <button
-              onClick={() => handleMarkPaid("speedpoint")}
+              onClick={() => setPayingWith("speedpoint")}
               disabled={loading}
               className="h-7 flex-1 border border-[#D9DDE2] bg-white text-[9px] font-medium text-[#555C66] transition-colors hover:bg-[#F4F5F7] disabled:opacity-50"
             >
-              {loading ? "..." : "Card"}
+              Card
             </button>
           </div>
         )}
@@ -188,6 +193,14 @@ export function TableCard({
       <div className="pointer-events-none absolute right-3 top-3 opacity-0 transition-opacity group-hover:opacity-100">
         <span className="text-[12px] text-[#A0A5AD]">↗</span>
       </div>
+
+      <MarkPaidDialog
+        open={payingWith !== null}
+        tableId={table.id}
+        method={payingWith ?? "cash"}
+        onClose={() => setPayingWith(null)}
+        onSuccess={handlePaymentSuccess}
+      />
     </div>
   );
 }

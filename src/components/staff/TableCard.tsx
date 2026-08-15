@@ -4,25 +4,25 @@ import type { TableRow } from "@/types/database";
 import { markTablePaid } from "@/app/actions/tables";
 import { useState } from "react";
 
-const STATUS_BADGE: Record<TableRow["status"], string> = {
-  vacant: "badge-neutral",
-  dining: "badge-accent",
-  awaiting_bill: "badge-warning",
-  paid: "badge-success",
-};
-
-const STATUS_RING: Record<TableRow["status"], string> = {
-  vacant: "border-[var(--border)]",
-  dining: "border-[var(--accent-200)]",
-  awaiting_bill: "border-[var(--warning-500)]/40",
-  paid: "border-[var(--success-500)]/40",
-};
-
 const STATUS_LABEL: Record<TableRow["status"], string> = {
-  vacant: "Vacant",
+  vacant: "Available",
   dining: "Dining",
-  awaiting_bill: "Awaiting Bill",
+  awaiting_bill: "Bill requested",
   paid: "Paid",
+};
+
+const STATUS_DOT: Record<TableRow["status"], string> = {
+  vacant: "bg-[#B8BDC5]",
+  dining: "bg-[#2563EB]",
+  awaiting_bill: "bg-[#D99A20]",
+  paid: "bg-[#16A34A]",
+};
+
+const STATUS_TEXT: Record<TableRow["status"], string> = {
+  vacant: "text-[#7D838D]",
+  dining: "text-[#2563EB]",
+  awaiting_bill: "text-[#A57613]",
+  paid: "text-[#16803A]",
 };
 
 export function TableCard({
@@ -41,19 +41,30 @@ export function TableCard({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [justPaid, setJustPaid] = useState(false);
-  const needsAttention = hasNewOrder || table.status === "awaiting_bill";
 
-  async function handleMarkPaid(method: "cash" | "speedpoint") {
+  const needsAttention =
+    hasNewOrder || table.status === "awaiting_bill";
+
+  async function handleMarkPaid(
+    method: "cash" | "speedpoint"
+  ) {
     setLoading(true);
     setError(null);
+
     const result = await markTablePaid(table.id, method);
+
     setLoading(false);
+
     if (!result.success) {
       setError(result.error ?? "Could not mark as paid");
       return;
     }
+
     setJustPaid(true);
-    setTimeout(() => setJustPaid(false), 2000);
+
+    setTimeout(() => {
+      setJustPaid(false);
+    }, 2000);
   }
 
   return (
@@ -61,54 +72,122 @@ export function TableCard({
       onClick={onOpenDetail}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => e.key === "Enter" && onOpenDetail()}
-      className={`card relative flex cursor-pointer flex-col gap-2 overflow-hidden border p-4 transition-shadow hover:shadow-md ${STATUS_RING[table.status]} ${
-        needsAttention ? "ring-2 ring-[var(--danger-500)] ring-offset-1" : ""
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpenDetail();
+        }
+      }}
+      className={`group relative min-h-[178px] cursor-pointer bg-white p-4 transition-colors hover:bg-[#FAFBFC] ${
+        needsAttention ? "bg-[#FFFDF7]" : ""
       }`}
     >
-      {needsAttention && (
-        <span className="absolute -right-2 -top-2 flex h-5 w-5 animate-pulse items-center justify-center rounded-full bg-[var(--danger-500)] text-[10px] font-bold text-white shadow-sm">
-          !
-        </span>
-      )}
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-lg font-bold text-[var(--foreground)]">
-          Table {table.table_number ?? "—"}
-        </p>
-        <span className={`badge ${STATUS_BADGE[table.status]}`}>{STATUS_LABEL[table.status]}</span>
-      </div>
-      <p className="text-xs text-[var(--foreground-muted)]">{table.section ?? "No section"}</p>
-      {waiterName && (
-        <p className="text-xs text-[var(--foreground-muted)]">Waiter: {waiterName}</p>
-      )}
-      {table.status === "awaiting_bill" && (
-        <p className="text-xs font-semibold text-[var(--warning-600)]">🔔 Waiter requested</p>
-      )}
-      {error && (
-        <p className="text-xs font-semibold text-[var(--danger-600)]">{error}</p>
-      )}
-      {justPaid && (
-        <p className="text-xs font-semibold text-[var(--success-600)]">Marked as paid ✓</p>
-      )}
+      {/* Top row */}
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-2">
+          <span
+            className={`h-2 w-2 rounded-full ${STATUS_DOT[table.status]}`}
+          />
 
-      {(table.status === "dining" || table.status === "awaiting_bill") && hasUnpaidOrder && (
-        <div className="mt-2 flex min-w-0 gap-2" onClick={(e) => e.stopPropagation()}>
-          <button
-            onClick={() => handleMarkPaid("cash")}
-            disabled={loading}
-            className="btn btn-primary min-w-0 flex-1 truncate !px-2 !py-1.5 !text-xs"
-          >
-            {loading ? "…" : "Cash"}
-          </button>
-          <button
-            onClick={() => handleMarkPaid("speedpoint")}
-            disabled={loading}
-            className="btn btn-secondary min-w-0 flex-1 truncate !px-2 !py-1.5 !text-xs"
-          >
-            {loading ? "…" : "Card"}
-          </button>
+          <span className="font-mono text-[12px] font-semibold tracking-[-0.01em] text-[#171A20]">
+            T{table.table_number ?? "—"}
+          </span>
+        </div>
+
+        <span
+          className={`text-[9px] font-medium ${STATUS_TEXT[table.status]}`}
+        >
+          {STATUS_LABEL[table.status]}
+        </span>
+      </div>
+
+      {/* Table information */}
+      <div className="mt-7">
+        <div className="text-[10px] text-[#8A9099]">
+          {table.section ?? "Main floor"}
+        </div>
+
+        {waiterName ? (
+          <div className="mt-1 text-[10px] text-[#626973]">
+            {waiterName}
+          </div>
+        ) : (
+          <div className="mt-1 text-[10px] text-[#A0A5AD]">
+            Unassigned
+          </div>
+        )}
+      </div>
+
+      {/* Attention state */}
+      {hasNewOrder && (
+        <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between border-t border-[#E9EBEE] pt-3">
+          <span className="flex items-center gap-2 text-[9px] font-medium text-[#2556C8]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#2563EB]" />
+            New order
+          </span>
+
+          <span className="font-mono text-[8px] text-[#999FA8]">
+            OPEN
+          </span>
         </div>
       )}
+
+      {table.status === "awaiting_bill" && (
+        <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between border-t border-[#E9EBEE] pt-3">
+          <span className="flex items-center gap-2 text-[9px] font-medium text-[#A57613]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#D99A20]" />
+            Bill requested
+          </span>
+
+          <span className="font-mono text-[8px] text-[#999FA8]">
+            ACTION
+          </span>
+        </div>
+      )}
+
+      {justPaid && (
+        <div className="absolute bottom-4 left-4 right-4 border-t border-[#E9EBEE] pt-3 text-[9px] font-medium text-emerald-600">
+          Payment recorded
+        </div>
+      )}
+
+      {error && (
+        <div className="absolute bottom-4 left-4 right-4 border-t border-[#E9EBEE] pt-3 text-[9px] font-medium text-red-600">
+          {error}
+        </div>
+      )}
+
+      {/* Payment controls */}
+      {(table.status === "dining" ||
+        table.status === "awaiting_bill") &&
+        hasUnpaidOrder &&
+        !justPaid && (
+          <div
+            className="absolute bottom-3 left-3 right-3 flex gap-1.5"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              onClick={() => handleMarkPaid("cash")}
+              disabled={loading}
+              className="h-7 flex-1 border border-[#D9DDE2] bg-white text-[9px] font-medium text-[#555C66] transition-colors hover:bg-[#F4F5F7] disabled:opacity-50"
+            >
+              {loading ? "..." : "Cash"}
+            </button>
+
+            <button
+              onClick={() => handleMarkPaid("speedpoint")}
+              disabled={loading}
+              className="h-7 flex-1 border border-[#D9DDE2] bg-white text-[9px] font-medium text-[#555C66] transition-colors hover:bg-[#F4F5F7] disabled:opacity-50"
+            >
+              {loading ? "..." : "Card"}
+            </button>
+          </div>
+        )}
+
+      {/* Hover affordance */}
+      <div className="pointer-events-none absolute right-3 top-3 opacity-0 transition-opacity group-hover:opacity-100">
+        <span className="text-[12px] text-[#A0A5AD]">↗</span>
+      </div>
     </div>
   );
 }

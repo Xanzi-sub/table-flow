@@ -140,7 +140,7 @@ function QrCard({ venueName, table }: { venueName: string; table: TableRow }) {
   }
 
   return (
-    <div className="card flex flex-col items-center gap-3 p-4">
+    <div className="card flex flex-col items-center gap-3 overflow-hidden p-4">
       <canvas
         ref={canvasRef}
         className="w-full max-w-[240px] rounded-md border border-[var(--border)]"
@@ -161,26 +161,28 @@ function QrCard({ venueName, table }: { venueName: string; table: TableRow }) {
             className="input !py-1.5 text-center"
             placeholder="Section (optional)"
           />
-          <div className="flex gap-2">
-            <button onClick={handleSave} disabled={saving} className="btn btn-primary flex-1 !py-1.5 !text-xs">
+          <div className="flex w-full gap-2">
+            <button onClick={handleSave} disabled={saving} className="btn btn-primary min-w-0 flex-1 truncate !px-2 !py-1.5 !text-xs">
               {saving ? "Saving…" : "Save"}
             </button>
-            <button onClick={() => setEditing(false)} className="btn btn-secondary flex-1 !py-1.5 !text-xs">
+            <button onClick={() => setEditing(false)} className="btn btn-secondary min-w-0 flex-1 truncate !px-2 !py-1.5 !text-xs">
               Cancel
             </button>
           </div>
         </div>
       ) : (
-        <div className="flex w-full gap-2">
-          <button onClick={handleDownload} className="btn btn-primary flex-1 !py-1.5 !text-xs">
+        <div className="flex w-full flex-col gap-1.5">
+          <button onClick={handleDownload} className="btn btn-primary w-full truncate !py-1.5 !text-xs">
             Download PNG
           </button>
-          <button onClick={() => setEditing(true)} className="btn btn-secondary !py-1.5 !text-xs">
-            Edit
-          </button>
-          <button onClick={handleDelete} className="btn btn-danger !py-1.5 !text-xs">
-            Delete
-          </button>
+          <div className="flex w-full min-w-0 gap-1.5">
+            <button onClick={() => setEditing(true)} className="btn btn-secondary min-w-0 flex-1 truncate !px-2 !py-1.5 !text-xs">
+              Edit
+            </button>
+            <button onClick={handleDelete} className="btn btn-danger min-w-0 flex-1 truncate !px-2 !py-1.5 !text-xs">
+              Delete
+            </button>
+          </div>
         </div>
       )}
     </div>

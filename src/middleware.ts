@@ -59,27 +59,10 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    // Only /admin needs the extra round-trip (to block waiters) — plain
-    // /staff pages just need an authenticated user; the protected layout's
-    // requireStaffProfile() already re-verifies the profile exists.
-    if (pathname.startsWith("/admin")) {
-      const { data: profile } = await supabase
-        .from("staff_profiles")
-        .select("role")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (!profile) {
-        url.pathname = "/staff/login";
-        url.searchParams.set("redirect", pathname);
-        return NextResponse.redirect(url);
-      }
-
-      if (profile.role === "waiter") {
-        url.pathname = "/staff/dashboard";
-        return NextResponse.redirect(url);
-      }
-    }
+    // Role gating (waiter -> /staff/dashboard, missing profile -> login) is
+    // handled by admin/layout.tsx's requireStaffProfile() — checking it again
+    // here would mean a second sequential staff_profiles round trip on every
+    // single /admin navigation for no correctness benefit.
   }
 
   return response;

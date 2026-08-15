@@ -3,25 +3,25 @@
 :root {
   /* ---- Neutrals (cool slate-gray — enterprise ops software, not startup) ---- */
   --gray-25: #fbfcfd;
-  --gray-50: #f7f8fa;
+  --gray-50: #f5f6f8;
   --gray-100: #eef0f3;
-  --gray-200: #dfe2e8;
+  --gray-200: #dfe2e6;
   --gray-300: #c5cad3;
   --gray-400: #9aa2b1;
   --gray-500: #6b7385;
-  --gray-600: #4d5566;
+  --gray-600: #555c66;
   --gray-700: #363c4a;
   --gray-800: #232733;
-  --gray-900: #14161d;
+  --gray-900: #171a20;
   --gray-950: #0b0c11;
 
-  /* ---- Brand accent: confident, desaturated blue ---- */
-  --accent-50: #eef5ff;
+  /* ---- Brand accent: confident, vivid blue ---- */
+  --accent-50: #eef2ff;
   --accent-100: #dbeafe;
   --accent-200: #b4d4fb;
-  --accent-500: #1c6fd6;
-  --accent-600: #145bb8;
-  --accent-700: #114a96;
+  --accent-500: #2f5cff;
+  --accent-600: #2454d6;
+  --accent-700: #1d3fa6;
 
   /* ---- Semantic status colors ---- */
   --success-50: #ecfdf3;
@@ -57,12 +57,15 @@
   /* ---- Radius: small and consistent ---- */
   --radius-sm: 4px;
   --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
+  /* ---- Radius: tight and mostly square — POS terminal, not consumer app ---- */
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 10px;
 
-  /* ---- Shadows: subtle, functional ---- */
-  --shadow-xs: 0 1px 2px 0 rgb(20 22 29 / 0.05);
-  --shadow-sm: 0 1px 3px 0 rgb(20 22 29 / 0.08), 0 1px 2px -1px rgb(20 22 29 / 0.06);
+  /* ---- Shadows: kept only for floating overlays (modals) — surfaces are flat ---- */
+  --shadow-xs: none;
+  --shadow-sm: 0 1px 2px 0 rgb(20 22 29 / 0.06);
   --shadow-md: 0 4px 8px -2px rgb(20 22 29 / 0.08), 0 2px 4px -2px rgb(20 22 29 / 0.05);
   --shadow-lg: 0 12px 24px -6px rgb(20 22 29 / 0.10), 0 4px 8px -4px rgb(20 22 29 / 0.06);
 
@@ -134,8 +137,7 @@ body {
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xs);
+  border-radius: var(--radius-md);
 }
 
 .btn {
@@ -144,10 +146,10 @@ body {
   justify-content: center;
   gap: var(--space-2);
   font-weight: 600;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  border-radius: var(--radius-md);
-  padding: var(--space-2) var(--space-4);
+  font-size: 0.8125rem;
+  line-height: 1.1rem;
+  border-radius: var(--radius-sm);
+  padding: 7px var(--space-3);
   transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease, transform 60ms ease;
   white-space: nowrap;
   user-select: none;
@@ -156,7 +158,7 @@ body {
 .btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
 .btn:focus-visible { outline: 2px solid var(--accent-500); outline-offset: 2px; }
 
-.btn-primary { background: var(--accent-500); color: #ffffff; box-shadow: var(--shadow-xs); }
+.btn-primary { background: var(--accent-500); color: #ffffff; }
 .btn-primary:hover { background: var(--accent-600); }
 
 .btn-secondary { background: var(--surface); color: var(--gray-700); border: 1px solid var(--border-strong); }
@@ -172,9 +174,9 @@ body {
   width: 100%;
   background: var(--surface);
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
-  padding: var(--space-2) var(--space-3);
-  font-size: 0.875rem;
+  border-radius: var(--radius-sm);
+  padding: 7px var(--space-3);
+  font-size: 0.8125rem;
   color: var(--foreground);
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
@@ -186,23 +188,24 @@ body {
 
 .label {
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 600;
-  color: var(--gray-600);
+  text-transform: uppercase;
+  color: var(--gray-500);
   margin-bottom: var(--space-1);
-  letter-spacing: 0.01em;
+  letter-spacing: 0.06em;
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   padding: 2px var(--space-2);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   line-height: 1.4;
 }
 .badge-neutral { background: var(--gray-100); color: var(--gray-600); }
@@ -216,14 +219,13 @@ body {
 .panel-muted {
   background: var(--gray-50);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
 }
 
 .stat-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xs);
+  border-radius: var(--radius-md);
   padding: var(--space-4) var(--space-5);
 }
 

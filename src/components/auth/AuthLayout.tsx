@@ -1,6 +1,8 @@
 // Shared shell for signup/login/onboarding forms: a branding panel that fills
 // the left half on large screens (so POS/desktop displays aren't just a tiny
 // card in empty space) plus a properly-sized form panel on the right.
+import Image from "next/image";
+
 export function AuthLayout({
   eyebrow,
   title,
@@ -17,6 +19,15 @@ export function AuthLayout({
   return (
     <main className="flex min-h-dvh flex-1 flex-col bg-neutral-950 lg:flex-row">
       <div className="flex flex-col justify-center px-6 py-10 lg:flex-1 lg:px-16 xl:px-24">
+        <div className="mb-8 inline-flex w-fit rounded-lg bg-white px-3 py-2">
+          <Image
+            src="/images/table-flow-logo.png"
+            alt="TableFlow"
+            width={2172}
+            height={724}
+            className="h-7 w-auto"
+          />
+        </div>
         <p className="text-sm font-semibold uppercase tracking-widest text-neutral-500">
           {eyebrow}
         </p>

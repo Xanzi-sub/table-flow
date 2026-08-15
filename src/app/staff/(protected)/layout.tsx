@@ -7,8 +7,7 @@ export default async function StaffProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const profile = await requireStaffProfile();
-  const venue = await getVenueSettings();
+  const [profile, venue] = await Promise.all([requireStaffProfile(), getVenueSettings()]);
 
   return (
     <StaffShell

@@ -42,10 +42,10 @@ export function QrScanner({ onDecoded }: QrScannerProps) {
   }, [onDecoded]);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-black">
+    <div className="overflow-hidden rounded-[var(--radius-md)] border border-[var(--border)] bg-black">
       <div id={containerId} className="aspect-square w-full" />
       {error && (
-        <p className="bg-red-50 px-3 py-2 text-center text-sm text-red-600">
+        <p className="bg-[var(--danger-50)] px-3 py-2 text-center text-sm text-[var(--danger-600)]">
           {error}
         </p>
       )}

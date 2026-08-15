@@ -4,17 +4,65 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import { updateOrderStatus } from "@/app/actions/orders";
-import { markTablePaid, reassignTableWaiter } from "@/app/actions/tables";
+import {
+  markTablePaid,
+  reassignTableWaiter,
+} from "@/app/actions/tables";
 import { Select } from "@/components/ui/Select";
-import type { Order, OrderStatus, StaffProfile, TableRow, UserRole } from "@/types/database";
+import type {
+  Order,
+  OrderStatus,
+  StaffProfile,
+  TableRow,
+  UserRole,
+} from "@/types/database";
 
-const STATUS_FLOW: OrderStatus[] = ["pending", "preparing", "served", "completed"];
-const STATUS_BADGE: Record<OrderStatus, string> = {
-  pending: "badge-warning",
-  preparing: "badge-accent",
-  served: "badge-success",
-  completed: "badge-neutral",
-  cancelled: "badge-danger",
+const STATUS_FLOW: OrderStatus[] = [
+  "pending",
+  "preparing",
+  "served",
+  "completed",
+];
+
+const STATUS_CONFIG: Record<
+  OrderStatus,
+  {
+    label: string;
+    dot: string;
+    text: string;
+    bg: string;
+  }
+> = {
+  pending: {
+    label: "New",
+    dot: "bg-amber-500",
+    text: "text-amber-700",
+    bg: "bg-amber-50",
+  },
+  preparing: {
+    label: "Preparing",
+    dot: "bg-blue-600",
+    text: "text-blue-700",
+    bg: "bg-blue-50",
+  },
+  served: {
+    label: "Served",
+    dot: "bg-emerald-500",
+    text: "text-emerald-700",
+    bg: "bg-emerald-50",
+  },
+  completed: {
+    label: "Completed",
+    dot: "bg-gray-400",
+    text: "text-gray-600",
+    bg: "bg-gray-50",
+  },
+  cancelled: {
+    label: "Cancelled",
+    dot: "bg-red-500",
+    text: "text-red-700",
+    bg: "bg-red-50",
+  },
 };
 
 interface OrderLine {
@@ -25,99 +73,255 @@ interface OrderLine {
   notes: string | null;
 }
 
-function OrderCard({ order, lines, customerName }: { order: Order; lines: OrderLine[]; customerName?: string }) {
+/* -------------------------------------------------------------------------- */
+/* Order card                                                                  */
+/* -------------------------------------------------------------------------- */
+
+function OrderCard({
+  order,
+  lines,
+  customerName,
+  onPaymentComplete,
+}: {
+  order: Order;
+  lines: OrderLine[];
+  customerName?: string;
+  onPaymentComplete?: () => void;
+}) {
   const [updating, setUpdating] = useState(false);
-  const [payingWith, setPayingWith] = useState<"cash" | "speedpoint" | null>(null);
+  const [payingWith, setPayingWith] = useState<
+    "cash" | "speedpoint" | null
+  >(null);
   const [payError, setPayError] = useState<string | null>(null);
-  const nextStatus = STATUS_FLOW[STATUS_FLOW.indexOf(order.status) + 1];
+  const [paymentComplete, setPaymentComplete] = useState(false);
+
+  const currentIndex = STATUS_FLOW.indexOf(order.status);
+  const nextStatus =
+    currentIndex >= 0
+      ? STATUS_FLOW[currentIndex + 1]
+      : undefined;
+
+  const status =
+    STATUS_CONFIG[order.status] ?? STATUS_CONFIG.completed;
 
   async function handleAdvance() {
-    if (!nextStatus) return;
+    if (!nextStatus || updating) return;
+
     setUpdating(true);
-    await updateOrderStatus(order.id, nextStatus);
+
+    const result = await updateOrderStatus(
+      order.id,
+      nextStatus
+    );
+
     setUpdating(false);
+
+    if (!result?.success) {
+      setPayError(
+        result?.error ?? "Could not update order status."
+      );
+    }
   }
 
-  async function handleMarkPaid(method: "cash" | "speedpoint") {
+  async function handleMarkPaid(
+    method: "cash" | "speedpoint"
+  ) {
+    if (payingWith) return;
+
     setPayingWith(method);
     setPayError(null);
-    const result = await markTablePaid(order.table_id, method);
+
+    const result = await markTablePaid(
+      order.table_id,
+      method
+    );
+
     setPayingWith(null);
-    if (!result.success) setPayError(result.error ?? "Could not mark as paid");
+
+    if (!result.success) {
+      setPayError(
+        result.error ?? "Could not record payment."
+      );
+      return;
+    }
+
+    setPaymentComplete(true);
+    onPaymentComplete?.();
+
+    setTimeout(() => {
+      setPaymentComplete(false);
+    }, 2500);
   }
 
   return (
-    <div className="panel-muted p-4">
-      <div className="mb-2 flex items-center justify-between">
+    <article className="border border-[#DFE2E6] bg-white">
+      {/* Order header */}
+      <div className="flex items-start justify-between border-b border-[#E7E9EC] px-4 py-3.5">
         <div>
-          <p className="text-sm font-bold text-[var(--foreground)]">
-            Order #{order.id.slice(0, 8).toUpperCase()}
-          </p>
-          <p className="text-xs text-[var(--foreground-muted)]">
-            {customerName ?? "Guest"} · {formatDateTime(order.created_at)}
-          </p>
-        </div>
-        <span className={`badge capitalize ${STATUS_BADGE[order.status]}`}>{order.status.replace("_", " ")}</span>
-      </div>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[10px] font-semibold tracking-[0.01em] text-[#171A20]">
+              #{order.id.slice(0, 8).toUpperCase()}
+            </span>
 
-      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--foreground-muted)]">
-        Payment: <span className={order.payment_status === "paid" ? "text-[var(--success-600)]" : "text-[var(--warning-600)]"}>
-          {order.payment_status.replace("_", " ")}
-        </span>
-      </p>
-      {payError && <p className="mb-2 text-xs font-semibold text-[var(--danger-600)]">{payError}</p>}
+            <span
+              className={`flex items-center gap-1.5 rounded-[3px] px-2 py-1 text-[8px] font-semibold ${status.bg} ${status.text}`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${status.dot}`}
+              />
 
-      <div className="flex flex-col divide-y divide-[var(--border)]">
-        {lines.map((line) => (
-          <div key={line.id} className="flex items-center justify-between py-1.5 text-sm">
-            <div>
-              <span className="font-medium text-[var(--foreground)]">
-                {line.quantity}x {line.name}
-              </span>
-              {line.notes && (
-                <p className="text-xs text-[var(--foreground-muted)]">{line.notes}</p>
-              )}
-            </div>
-            <span className="text-[var(--foreground-muted)]">
-              {formatCurrency(line.unitPrice * line.quantity)}
+              {status.label}
             </span>
           </div>
-        ))}
+
+          <p className="mt-1.5 text-[9px] text-[#858B95]">
+            {customerName ?? "Guest"} ·{" "}
+            {formatDateTime(order.created_at)}
+          </p>
+        </div>
+
+        <div className="text-right">
+          <div className="text-[8px] uppercase tracking-[0.1em] text-[#969BA4]">
+            Payment
+          </div>
+
+          <div
+            className={`mt-1 text-[9px] font-semibold ${
+              order.payment_status === "paid"
+                ? "text-emerald-600"
+                : "text-amber-600"
+            }`}
+          >
+            {order.payment_status.replace("_", " ")}
+          </div>
+        </div>
       </div>
 
-      <div className="mt-2 flex items-center justify-between border-t border-[var(--border)] pt-2">
-        <span className="text-sm font-bold text-[var(--foreground)]">
-          Total: {formatCurrency(order.total_amount)}
-        </span>
-        <div className="flex gap-2">
+      {/* Order items */}
+      <div className="px-4">
+        {lines.length === 0 ? (
+          <div className="py-5 text-[10px] text-[#969BA4]">
+            No items recorded for this order.
+          </div>
+        ) : (
+          <div className="divide-y divide-[#ECEEF1]">
+            {lines.map((line) => (
+              <div
+                key={line.id}
+                className="flex items-start justify-between gap-4 py-3"
+              >
+                <div className="min-w-0">
+                  <div className="text-[11px] font-medium text-[#30353D]">
+                    <span className="mr-2 font-mono text-[9px] text-[#858B95]">
+                      {line.quantity}×
+                    </span>
+
+                    {line.name}
+                  </div>
+
+                  {line.notes && (
+                    <div className="mt-1 max-w-[280px] text-[9px] leading-4 text-[#8A9099]">
+                      {line.notes}
+                    </div>
+                  )}
+                </div>
+
+                <span className="shrink-0 font-mono text-[10px] text-[#626973]">
+                  {formatCurrency(
+                    line.unitPrice * line.quantity
+                  )}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Order total */}
+      <div className="border-t border-[#E7E9EC] bg-[#FAFBFC] px-4 py-3">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-medium text-[#737983]">
+            Order total
+          </span>
+
+          <span className="text-[14px] font-semibold tracking-[-0.02em] text-[#15181D]">
+            {formatCurrency(order.total_amount)}
+          </span>
+        </div>
+      </div>
+
+      {/* Payment error */}
+      {payError && (
+        <div className="border-t border-red-100 bg-red-50 px-4 py-2.5 text-[9px] font-medium text-red-700">
+          {payError}
+        </div>
+      )}
+
+      {/* Payment success */}
+      {paymentComplete && (
+        <div className="flex items-center gap-2 border-t border-emerald-100 bg-emerald-50 px-4 py-2.5 text-[9px] font-medium text-emerald-700">
+          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[8px] text-white">
+            ✓
+          </span>
+
+          Payment recorded successfully.
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#E7E9EC] px-4 py-3">
+        <div className="flex gap-1.5">
           {order.payment_status !== "paid" && (
             <>
               <button
                 onClick={() => handleMarkPaid("cash")}
                 disabled={payingWith !== null}
-                className="btn btn-secondary !py-1.5 !text-xs"
+                className="h-8 border border-[#D9DDE2] bg-white px-3 text-[9px] font-medium text-[#555C66] transition-colors hover:bg-[#F4F5F7] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {payingWith === "cash" ? "…" : "Mark Paid (Cash)"}
+                {payingWith === "cash"
+                  ? "Processing..."
+                  : "Cash"}
               </button>
+
               <button
                 onClick={() => handleMarkPaid("speedpoint")}
                 disabled={payingWith !== null}
-                className="btn btn-secondary !py-1.5 !text-xs"
+                className="h-8 border border-[#D9DDE2] bg-white px-3 text-[9px] font-medium text-[#555C66] transition-colors hover:bg-[#F4F5F7] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {payingWith === "speedpoint" ? "…" : "Mark Paid (Card)"}
+                {payingWith === "speedpoint"
+                  ? "Processing..."
+                  : "Card"}
               </button>
             </>
           )}
-          {nextStatus && (
-            <button onClick={handleAdvance} disabled={updating} className="btn btn-primary !py-1.5 !text-xs">
-              {updating ? "Updating…" : `Mark ${nextStatus}`}
-            </button>
+
+          {order.payment_status === "paid" && (
+            <span className="flex h-8 items-center gap-1.5 px-1 text-[9px] font-medium text-emerald-600">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              Paid
+            </span>
           )}
         </div>
+
+        {nextStatus && (
+          <button
+            onClick={handleAdvance}
+            disabled={updating}
+            className="h-8 bg-[#171A20] px-3.5 text-[9px] font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {updating
+              ? "Updating..."
+              : `Mark ${STATUS_CONFIG[nextStatus]?.label ?? nextStatus}`}
+          </button>
+        )}
       </div>
-    </div>
+    </article>
   );
 }
+
+/* -------------------------------------------------------------------------- */
+/* Waiter assignment                                                           */
+/* -------------------------------------------------------------------------- */
 
 function ReassignWaiter({
   tableId,
@@ -126,46 +330,91 @@ function ReassignWaiter({
 }: {
   tableId: string;
   currentWaiterId: string | null;
-  waiters: Pick<StaffProfile, "id" | "full_name" | "is_checked_in">[];
+  waiters: Pick<
+    StaffProfile,
+    "id" | "full_name" | "is_checked_in"
+  >[];
 }) {
-  const [value, setValue] = useState(currentWaiterId ?? "");
+  const [value, setValue] = useState(
+    currentWaiterId ?? ""
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => setValue(currentWaiterId ?? ""), [currentWaiterId]);
+  useEffect(() => {
+    setValue(currentWaiterId ?? "");
+  }, [currentWaiterId]);
 
   async function handleChange(nextId: string) {
     setValue(nextId);
     setSaving(true);
     setError(null);
-    const result = await reassignTableWaiter(tableId, nextId || null);
+
+    const result = await reassignTableWaiter(
+      tableId,
+      nextId || null
+    );
+
     setSaving(false);
+
     if (!result.success) {
-      setError(result.error ?? "Could not reassign waiter");
+      setError(
+        result.error ?? "Could not reassign waiter."
+      );
       setValue(currentWaiterId ?? "");
     }
   }
 
   return (
-    <div className="mb-4 flex items-center gap-2">
-      <span className="label !mb-0">Waiter</span>
-      <Select
-        value={value}
-        disabled={saving}
-        onChange={(e) => handleChange(e.target.value)}
-        className="w-48"
-      >
-        <option value="">Unassigned</option>
-        {waiters.map((w) => (
-          <option key={w.id} value={w.id}>
-            {w.full_name}{w.is_checked_in ? "" : " (off duty)"}
-          </option>
-        ))}
-      </Select>
-      {error && <span className="text-xs font-semibold text-[var(--danger-600)]">{error}</span>}
+    <div className="border-b border-[#E2E4E8] bg-white px-5 py-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="text-[9px] font-semibold uppercase tracking-[0.1em] text-[#858B95]">
+            Assigned waiter
+          </div>
+
+          <div className="mt-1 text-[10px] text-[#626973]">
+            Controls who owns this table.
+          </div>
+        </div>
+
+        <Select
+          value={value}
+          disabled={saving}
+          onChange={(event) =>
+            handleChange(event.target.value)
+          }
+          className="h-8 w-full border-[#D9DDE2] text-[10px] sm:w-48"
+        >
+          <option value="">Unassigned</option>
+
+          {waiters.map((waiter) => (
+            <option key={waiter.id} value={waiter.id}>
+              {waiter.full_name}
+              {waiter.is_checked_in ? "" : " · Off duty"}
+            </option>
+          ))}
+        </Select>
+      </div>
+
+      {saving && (
+        <p className="mt-2 text-[9px] text-[#858B95]">
+          Saving assignment...
+        </p>
+      )}
+
+      {error && (
+        <p className="mt-2 text-[9px] font-medium text-red-600">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
+
+/* -------------------------------------------------------------------------- */
+/* Table detail modal / POS drawer                                             */
+/* -------------------------------------------------------------------------- */
 
 export function TableDetailModal({
   table,
@@ -175,12 +424,19 @@ export function TableDetailModal({
 }: {
   table: TableRow;
   role: UserRole;
-  waiters: Pick<StaffProfile, "id" | "full_name" | "is_checked_in">[];
+  waiters: Pick<
+    StaffProfile,
+    "id" | "full_name" | "is_checked_in"
+  >[];
   onClose: () => void;
 }) {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [linesByOrder, setLinesByOrder] = useState<Record<string, OrderLine[]>>({});
-  const [customerNames, setCustomerNames] = useState<Record<string, string>>({});
+  const [linesByOrder, setLinesByOrder] = useState<
+    Record<string, OrderLine[]>
+  >({});
+  const [customerNames, setCustomerNames] = useState<
+    Record<string, string>
+  >({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -189,41 +445,56 @@ export function TableDetailModal({
 
     async function load() {
       setLoading(true);
+
       const { data: orderRows } = await supabase
         .from("orders")
         .select("*")
         .eq("table_id", table.id)
         .neq("status", "cancelled")
-        .order("created_at", { ascending: false });
+        .order("created_at", {
+          ascending: false,
+        });
 
       if (cancelled) return;
+
       const activeOrders = orderRows ?? [];
+
       setOrders(activeOrders);
 
       if (activeOrders.length > 0) {
         const { data: itemRows } = await supabase
           .from("order_items")
-          .select("id, order_id, quantity, unit_price, notes, menu_items(name)")
+          .select(
+            "id, order_id, quantity, unit_price, notes, menu_items(name)"
+          )
           .in(
             "order_id",
-            activeOrders.map((o) => o.id)
+            activeOrders.map((order) => order.id)
           );
 
         if (cancelled) return;
+
         type Row = {
           id: string;
           order_id: string;
           quantity: number;
           unit_price: number;
           notes: string | null;
-          menu_items: { name: string } | { name: string }[] | null;
+          menu_items:
+            | { name: string }
+            | { name: string }[]
+            | null;
         };
+
         const grouped: Record<string, OrderLine[]> = {};
+
         for (const row of (itemRows ?? []) as Row[]) {
           const name = Array.isArray(row.menu_items)
             ? row.menu_items[0]?.name ?? "Item"
             : row.menu_items?.name ?? "Item";
+
           grouped[row.order_id] ??= [];
+
           grouped[row.order_id].push({
             id: row.id,
             name,
@@ -232,22 +503,40 @@ export function TableDetailModal({
             notes: row.notes,
           });
         }
+
         setLinesByOrder(grouped);
 
-        const customerIds = [...new Set(activeOrders.map((o) => o.customer_id).filter((id): id is string => !!id))];
+        const customerIds = [
+          ...new Set(
+            activeOrders
+              .map((order) => order.customer_id)
+              .filter(
+                (id): id is string => Boolean(id)
+              )
+          ),
+        ];
+
         if (customerIds.length > 0) {
-          const { data: customerRows } = await supabase
-            .from("customer_profiles")
-            .select("id, full_name")
-            .in("id", customerIds);
+          const { data: customerRows } =
+            await supabase
+              .from("customer_profiles")
+              .select("id, full_name")
+              .in("id", customerIds);
+
           if (cancelled) return;
+
           const names: Record<string, string> = {};
-          for (const c of customerRows ?? []) {
-            if (c.full_name) names[c.id] = c.full_name;
+
+          for (const customer of customerRows ?? []) {
+            if (customer.full_name) {
+              names[customer.id] = customer.full_name;
+            }
           }
+
           setCustomerNames(names);
         }
       }
+
       setLoading(false);
     }
 
@@ -257,8 +546,15 @@ export function TableDetailModal({
       .channel(`table-detail-${table.id}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "orders", filter: `table_id=eq.${table.id}` },
-        () => load()
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+          filter: `table_id=eq.${table.id}`,
+        },
+        () => {
+          load();
+        }
       )
       .subscribe();
 
@@ -268,51 +564,307 @@ export function TableDetailModal({
     };
   }, [table.id]);
 
+  const openOrders = orders.filter(
+    (order) =>
+      order.status !== "completed" &&
+      order.status !== "cancelled"
+  );
+
+  const completedOrders = orders.filter(
+    (order) => order.status === "completed"
+  );
+
+  const total = orders.reduce(
+    (sum, order) => sum + Number(order.total_amount ?? 0),
+    0
+  );
+
+  const paidTotal = orders
+    .filter((order) => order.payment_status === "paid")
+    .reduce(
+      (sum, order) =>
+        sum + Number(order.total_amount ?? 0),
+      0
+    );
+
+  const outstandingTotal = Math.max(
+    total - paidTotal,
+    0
+  );
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center" onClick={onClose}>
-      <div
-        className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-[var(--surface)] p-6 shadow-2xl sm:rounded-2xl"
-        onClick={(e) => e.stopPropagation()}
+    <div
+      className="fixed inset-0 z-50 bg-black/20"
+      onClick={onClose}
+    >
+      {/* Drawer */}
+      <aside
+        className="absolute right-0 top-0 flex h-full w-full max-w-[540px] flex-col border-l border-[#DDE1E6] bg-[#F5F6F8] shadow-[-16px_0_50px_rgba(0,0,0,0.10)]"
+        onClick={(event) => event.stopPropagation()}
       >
-        <div className="mb-4 flex items-center justify-between">
+        {/* Header */}
+        <header className="flex h-[76px] shrink-0 items-center justify-between border-b border-[#DFE2E7] bg-white px-5">
           <div>
-            <h2 className="text-lg font-bold text-[var(--foreground)]">
-              Table {table.table_number ?? "—"}
-            </h2>
-            <p className="text-xs text-[var(--foreground-muted)]">{table.section ?? "No section"}</p>
+            <div className="flex items-center gap-2.5">
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  table.status === "vacant"
+                    ? "bg-[#B8BDC5]"
+                    : table.status === "dining"
+                      ? "bg-blue-600"
+                      : table.status === "awaiting_bill"
+                        ? "bg-amber-500"
+                        : "bg-emerald-500"
+                }`}
+              />
+
+              <h2 className="text-[15px] font-semibold tracking-[-0.025em] text-[#15181D]">
+                Table {table.table_number ?? "—"}
+              </h2>
+            </div>
+
+            <div className="mt-1.5 flex items-center gap-2 text-[9px] text-[#858B95]">
+              <span>
+                {table.section ?? "Main floor"}
+              </span>
+
+              <span className="h-2.5 w-px bg-[#DDE0E4]" />
+
+              <span className="capitalize">
+                {table.status.replace("_", " ")}
+              </span>
+            </div>
           </div>
-          <button onClick={onClose} className="btn btn-secondary !px-3 !py-1.5">
-            Close
+
+          <button
+            onClick={onClose}
+            aria-label="Close table"
+            className="flex h-8 w-8 items-center justify-center border border-[#DDE1E6] bg-white text-[17px] leading-none text-[#737983] transition-colors hover:bg-[#F4F5F7] hover:text-[#171A20]"
+          >
+            ×
           </button>
+        </header>
+
+        {/* Table summary */}
+        <div className="grid shrink-0 grid-cols-3 border-b border-[#DFE2E7] bg-white">
+          <SummaryMetric
+            label="Orders"
+            value={orders.length}
+          />
+
+          <SummaryMetric
+            label="Paid"
+            value={formatCurrency(paidTotal)}
+          />
+
+          <SummaryMetric
+            label="Outstanding"
+            value={formatCurrency(outstandingTotal)}
+            warning={outstandingTotal > 0}
+          />
         </div>
 
-        {(role === "manager" || role === "admin") && (
-          <ReassignWaiter tableId={table.id} currentWaiterId={table.current_waiter_id} waiters={waiters} />
-        )}
-
-        {table.status === "awaiting_bill" && (
-          <p className="mb-4 rounded-lg bg-[var(--warning-50)] px-3 py-2 text-sm font-semibold text-[var(--warning-600)]">
-            🔔 Customer requested the waiter / bill
-          </p>
-        )}
-
-        {loading && <p className="text-sm text-[var(--foreground-muted)]">Loading orders…</p>}
-
-        <div className="flex flex-col gap-4">
-          {orders.map((order) => (
-            <OrderCard
-              key={order.id}
-              order={order}
-              lines={linesByOrder[order.id] ?? []}
-              customerName={order.customer_id ? customerNames[order.customer_id] : undefined}
+        {/* Scrollable content */}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {/* Waiter assignment */}
+          {(role === "manager" || role === "admin") && (
+            <ReassignWaiter
+              tableId={table.id}
+              currentWaiterId={table.current_waiter_id}
+              waiters={waiters}
             />
-          ))}
-          {!loading && orders.length === 0 && (
-            <p className="py-6 text-center text-sm text-[var(--foreground-muted)]">
-              No orders yet for this table.
-            </p>
+          )}
+
+          {/* Bill request */}
+          {table.status === "awaiting_bill" && (
+            <div className="border-b border-[#E8DDBF] bg-[#FFFBF1] px-5 py-3.5">
+              <div className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+
+                <span className="text-[10px] font-semibold text-[#80651D]">
+                  Customer requested the bill
+                </span>
+              </div>
+
+              <p className="mt-1.5 pl-3.5 text-[9px] text-[#9A7C2B]">
+                This table requires service attention.
+              </p>
+            </div>
+          )}
+
+          {/* Orders section */}
+          <div className="px-5 py-5">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <h3 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#737983]">
+                  Current orders
+                </h3>
+
+                <p className="mt-1 text-[9px] text-[#969BA4]">
+                  {openOrders.length} active{" "}
+                  {openOrders.length === 1
+                    ? "order"
+                    : "orders"}
+                </p>
+              </div>
+
+              {loading && (
+                <span className="text-[9px] text-[#969BA4]">
+                  Updating...
+                </span>
+              )}
+            </div>
+
+            {loading && orders.length === 0 ? (
+              <div className="border border-[#DFE2E6] bg-white px-5 py-10 text-center">
+                <div className="mx-auto h-5 w-5 animate-spin rounded-full border-2 border-[#DDE1E6] border-t-[#2563EB]" />
+
+                <p className="mt-3 text-[10px] text-[#858B95]">
+                  Loading table activity...
+                </p>
+              </div>
+            ) : openOrders.length === 0 ? (
+              <div className="border border-dashed border-[#D8DCE1] bg-white px-5 py-10 text-center">
+                <div className="text-[11px] font-medium text-[#626973]">
+                  No active orders
+                </div>
+
+                <p className="mt-1 text-[9px] text-[#969BA4]">
+                  Orders placed at this table will appear here.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {openOrders.map((order) => (
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    lines={
+                      linesByOrder[order.id] ?? []
+                    }
+                    customerName={
+                      order.customer_id
+                        ? customerNames[
+                            order.customer_id
+                          ]
+                        : undefined
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Completed orders */}
+          {completedOrders.length > 0 && (
+            <div className="border-t border-[#DFE2E6] bg-[#F8F9FA] px-5 py-5">
+              <div className="mb-3">
+                <h3 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#858B95]">
+                  Completed orders
+                </h3>
+
+                <p className="mt-1 text-[9px] text-[#A0A5AD]">
+                  Previous activity for this table
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                {completedOrders.map((order) => (
+                  <div
+                    key={order.id}
+                    className="flex items-center justify-between border border-[#E1E4E8] bg-white px-4 py-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[#A8ADB5]" />
+
+                      <div>
+                        <div className="font-mono text-[9px] font-medium text-[#555C66]">
+                          #
+                          {order.id
+                            .slice(0, 8)
+                            .toUpperCase()}
+                        </div>
+
+                        <div className="mt-0.5 text-[8px] text-[#969BA4]">
+                          {formatDateTime(
+                            order.created_at
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <span className="font-mono text-[10px] text-[#626973]">
+                      {formatCurrency(
+                        order.total_amount
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
+
+        {/* Bottom summary */}
+        <footer className="shrink-0 border-t border-[#DDE1E6] bg-white px-5 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[9px] uppercase tracking-[0.1em] text-[#969BA4]">
+                Table total
+              </div>
+
+              <div className="mt-1 text-[18px] font-semibold tracking-[-0.035em] text-[#15181D]">
+                {formatCurrency(total)}
+              </div>
+            </div>
+
+            <div className="text-right">
+              <div className="text-[9px] uppercase tracking-[0.1em] text-[#969BA4]">
+                Outstanding
+              </div>
+
+              <div
+                className={`mt-1 text-[13px] font-semibold ${
+                  outstandingTotal > 0
+                    ? "text-amber-600"
+                    : "text-emerald-600"
+                }`}
+              >
+                {formatCurrency(outstandingTotal)}
+              </div>
+            </div>
+          </div>
+        </footer>
+      </aside>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Summary metric                                                              */
+/* -------------------------------------------------------------------------- */
+
+function SummaryMetric({
+  label,
+  value,
+  warning,
+}: {
+  label: string;
+  value: string | number;
+  warning?: boolean;
+}) {
+  return (
+    <div className="border-r border-[#E2E4E8] px-4 py-3.5 last:border-r-0">
+      <div className="text-[8px] font-semibold uppercase tracking-[0.1em] text-[#969BA4]">
+        {label}
+      </div>
+
+      <div
+        className={`mt-1.5 text-[12px] font-semibold tracking-[-0.01em] ${
+          warning ? "text-amber-600" : "text-[#252A31]"
+        }`}
+      >
+        {value}
       </div>
     </div>
   );

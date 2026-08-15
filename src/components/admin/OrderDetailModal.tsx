@@ -73,9 +73,9 @@ export function OrderDetailModal({
   }, [orderId]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 sm:items-center" onClick={onClose}>
       <div
-        className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-[var(--surface)] p-6 shadow-2xl sm:rounded-2xl"
+        className="max-h-[85vh] w-full max-w-lg overflow-y-auto border border-[var(--border)] bg-[var(--surface)] p-6 sm:rounded-md"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-start justify-between">

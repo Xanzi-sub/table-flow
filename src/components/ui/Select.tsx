@@ -15,9 +15,7 @@ export function Select({
     <div className="relative">
       <select
         className={cn(
-          "w-full appearance-none rounded-xl border border-neutral-300 bg-white px-4 py-2.5 pr-9 text-sm text-neutral-900",
-          "focus:border-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-200",
-          "disabled:cursor-not-allowed disabled:opacity-50",
+          "input w-full appearance-none pr-9",
           className
         )}
         style={{ colorScheme: "light" }}
@@ -26,7 +24,7 @@ export function Select({
         {children}
       </select>
       <svg
-        className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400"
+        className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--gray-400)]"
         viewBox="0 0 20 20"
         fill="none"
         stroke="currentColor"

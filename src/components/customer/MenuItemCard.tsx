@@ -47,7 +47,9 @@ export function MenuItemCard({
       <div className="min-w-0 flex-1 py-0.5">
         {offer && (
           <span className="mb-1.5 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-amber-800">
-            {offer.specialName}
+            {offer.discountType === "quantity_deal"
+              ? `${offer.specialName} · Buy ${offer.buyQuantity}, pay ${offer.payQuantity}`
+              : offer.specialName}
           </span>
         )}
         <div className="flex items-start justify-between gap-3">
@@ -67,7 +69,7 @@ export function MenuItemCard({
             <span className="text-[14px] font-semibold tracking-[-0.01em] text-[#171614]">
               {formatCurrency(offer?.unitPrice ?? item.price)}
             </span>
-            {offer && (
+            {offer && offer.discountType !== "quantity_deal" && (
               <span className="ml-2 text-[11px] text-[#aaa49b] line-through">{formatCurrency(item.price)}</span>
             )}
           </span>

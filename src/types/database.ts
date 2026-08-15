@@ -142,7 +142,7 @@ export interface MenuItem {
 }
 
 export type MenuSpecialKind = "item_discount" | "combo";
-export type MenuSpecialDiscountType = "percentage" | "fixed_price";
+export type MenuSpecialDiscountType = "percentage" | "fixed_price" | "quantity_deal";
 
 export interface MenuSpecial {
   id: string;
@@ -152,6 +152,8 @@ export interface MenuSpecial {
   item_ids: string[];
   discount_type: MenuSpecialDiscountType;
   discount_value: number;
+  buy_quantity: number;
+  pay_quantity: number;
   status: MenuItemStatus;
   starts_at: string | null;
   ends_at: string | null;

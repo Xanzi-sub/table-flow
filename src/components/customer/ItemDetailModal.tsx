@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import type { MenuItem } from "@/types/database";
 import { formatCurrency } from "@/lib/utils";
-import { useCart } from "@/context/CartContext";
+import { calculateItemOfferTotal, useCart } from "@/context/CartContext";
 import { PlateIcon } from "./Icon";
 
 export function ItemDetailModal({
@@ -27,7 +27,7 @@ export function ItemDetailModal({
 
   const offer = getItemOffer(item);
   const effectivePrice = offer?.unitPrice ?? item.price;
-  const total = effectivePrice * quantity;
+  const total = calculateItemOfferTotal(item, offer, quantity);
 
   return (
     <div className="fixed inset-0 z-50 bg-[#171614]/60 backdrop-blur-[5px]">
@@ -110,7 +110,9 @@ export function ItemDetailModal({
 
               {offer && (
                 <div className="mt-3 rounded-[13px] bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800">
-                  {offer.specialName} applied automatically
+                  {offer.discountType === "quantity_deal"
+                    ? `${offer.specialName}: buy ${offer.buyQuantity}, pay for ${offer.payQuantity}`
+                    : `${offer.specialName} applied automatically`}
                 </div>
               )}
 

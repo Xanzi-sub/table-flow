@@ -8,7 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import type { MenuItem, MenuSpecial } from "@/types/database";
+import type { MenuItem, MenuSpecial, MenuSpecialDiscountType } from "@/types/database";
 
 const CART_STORAGE_KEY = "tf_cart";
 
@@ -20,6 +20,9 @@ export interface CartLine {
   unitPrice: number;
   specialId?: string;
   specialName?: string;
+  specialDiscountType?: MenuSpecialDiscountType;
+  buyQuantity?: number;
+  payQuantity?: number;
   kind: "item" | "combo";
   comboItems?: MenuItem[];
 }
@@ -28,6 +31,32 @@ export interface ItemOffer {
   specialId: string;
   specialName: string;
   unitPrice: number;
+  discountType: MenuSpecialDiscountType;
+  buyQuantity: number;
+  payQuantity: number;
+}
+
+export function calculateItemOfferTotal(item: MenuItem, offer: ItemOffer | null, quantity: number) {
+  if (!offer) return item.price * quantity;
+  if (offer.discountType !== "quantity_deal") return offer.unitPrice * quantity;
+  const groups = Math.floor(quantity / offer.buyQuantity);
+  const remainder = quantity % offer.buyQuantity;
+  return item.price * (groups * offer.payQuantity + remainder);
+}
+
+export function calculateCartLineTotal(line: CartLine) {
+  if (line.kind === "combo") return line.unitPrice * line.quantity;
+  const offer: ItemOffer | null = line.specialId
+    ? {
+        specialId: line.specialId,
+        specialName: line.specialName ?? "Special",
+        unitPrice: line.unitPrice,
+        discountType: line.specialDiscountType ?? "fixed_price",
+        buyQuantity: line.buyQuantity ?? 1,
+        payQuantity: line.payQuantity ?? 1,
+      }
+    : null;
+  return calculateItemOfferTotal(line.item, offer, line.quantity);
 }
 
 interface CartContextValue {
@@ -35,6 +64,7 @@ interface CartContextValue {
   addItem: (item: MenuItem, quantity: number, notes: string) => void;
   addCombo: (special: MenuSpecial, items: MenuItem[]) => void;
   getItemOffer: (item: MenuItem) => ItemOffer | null;
+  getLineTotal: (line: CartLine) => number;
   updateQuantity: (lineId: string, quantity: number) => void;
   removeItem: (lineId: string) => void;
   clear: () => void;
@@ -64,6 +94,9 @@ export function CartProvider({ children, specials }: { children: React.ReactNode
             unitPrice: line.unitPrice ?? line.item!.price,
             specialId: line.specialId,
             specialName: line.specialName,
+            specialDiscountType: line.specialDiscountType,
+            buyQuantity: line.buyQuantity,
+            payQuantity: line.payQuantity,
             kind: line.kind ?? "item",
             comboItems: line.comboItems,
           }))
@@ -90,11 +123,29 @@ export function CartProvider({ children, specials }: { children: React.ReactNode
           unitPrice:
             special.discount_type === "percentage"
               ? Math.max(0, item.price * (1 - special.discount_value / 100))
-              : Math.min(item.price, special.discount_value),
+              : special.discount_type === "fixed_price"
+                ? Math.min(item.price, special.discount_value)
+                : item.price,
+          discountType: special.discount_type,
+          buyQuantity: special.buy_quantity,
+          payQuantity: special.pay_quantity,
+          comparisonPrice:
+            special.discount_type === "quantity_deal"
+              ? item.price * (special.pay_quantity / special.buy_quantity)
+              : special.discount_type === "percentage"
+                ? item.price * (1 - special.discount_value / 100)
+                : Math.min(item.price, special.discount_value),
         }))
-        .sort((first, second) => first.unitPrice - second.unitPrice);
+        .sort((first, second) => first.comparisonPrice - second.comparisonPrice);
       if (!offers[0]) return null;
-      return { ...offers[0], unitPrice: Math.round(offers[0].unitPrice * 100) / 100 };
+      return {
+        specialId: offers[0].specialId,
+        specialName: offers[0].specialName,
+        unitPrice: Math.round(offers[0].unitPrice * 100) / 100,
+        discountType: offers[0].discountType,
+        buyQuantity: offers[0].buyQuantity,
+        payQuantity: offers[0].payQuantity,
+      };
     },
     [specials]
   );
@@ -106,7 +157,14 @@ export function CartProvider({ children, specials }: { children: React.ReactNode
         if (line.kind === "combo") {
           const special = line.specialId ? specials.find((entry) => entry.id === line.specialId) : null;
           if (!special || special.kind !== "combo") return [];
-          return [{ ...line, unitPrice: special.discount_value, specialName: special.name }];
+          return [{
+            ...line,
+            unitPrice: special.discount_value,
+            specialName: special.name,
+            specialDiscountType: special.discount_type,
+            buyQuantity: special.buy_quantity,
+            payQuantity: special.pay_quantity,
+          }];
         }
 
         const offer = getItemOffer(line.item);
@@ -116,6 +174,9 @@ export function CartProvider({ children, specials }: { children: React.ReactNode
             unitPrice: offer?.unitPrice ?? line.item.price,
             specialId: offer?.specialId,
             specialName: offer?.specialName,
+            specialDiscountType: offer?.discountType,
+            buyQuantity: offer?.buyQuantity,
+            payQuantity: offer?.payQuantity,
           },
         ];
       })
@@ -143,6 +204,9 @@ export function CartProvider({ children, specials }: { children: React.ReactNode
             unitPrice: offer?.unitPrice ?? item.price,
             specialId: offer?.specialId,
             specialName: offer?.specialName,
+            specialDiscountType: offer?.discountType,
+            buyQuantity: offer?.buyQuantity,
+            payQuantity: offer?.payQuantity,
             kind: "item" as const,
           },
         ];
@@ -169,6 +233,9 @@ export function CartProvider({ children, specials }: { children: React.ReactNode
           unitPrice: special.discount_value,
           specialId: special.id,
           specialName: special.name,
+          specialDiscountType: special.discount_type,
+          buyQuantity: special.buy_quantity,
+          payQuantity: special.pay_quantity,
           kind: "combo" as const,
           comboItems: items,
         },
@@ -198,7 +265,7 @@ export function CartProvider({ children, specials }: { children: React.ReactNode
   );
 
   const totalAmount = useMemo(
-    () => lines.reduce((sum, l) => sum + l.quantity * l.unitPrice, 0),
+    () => lines.reduce((sum, line) => sum + calculateCartLineTotal(line), 0),
     [lines]
   );
 
@@ -209,6 +276,7 @@ export function CartProvider({ children, specials }: { children: React.ReactNode
         addItem,
         addCombo,
         getItemOffer,
+        getLineTotal: calculateCartLineTotal,
         updateQuantity,
         removeItem,
         clear,

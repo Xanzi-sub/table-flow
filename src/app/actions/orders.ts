@@ -104,20 +104,26 @@ export async function submitOrder(input: {
     if (!item) return { success: false, error: "A menu item in your cart is no longer available." };
     const offers = activeSpecials
       .filter((special) => special.kind === "item_discount" && special.item_ids.includes(item.id))
-      .map((special) => ({
-        special,
-        price:
+      .map((special) => {
+        const chargedUnits =
+          special.discount_type === "quantity_deal"
+            ? Math.floor(quantity / special.buy_quantity) * special.pay_quantity + (quantity % special.buy_quantity)
+            : quantity;
+        const total =
           special.discount_type === "percentage"
-            ? roundMoney(item.price * (1 - special.discount_value / 100))
-            : Math.min(item.price, special.discount_value),
-      }))
-      .sort((first, second) => first.price - second.price);
+            ? roundMoney(item.price * (1 - special.discount_value / 100) * quantity)
+            : special.discount_type === "fixed_price"
+              ? roundMoney(Math.min(item.price, special.discount_value) * quantity)
+              : roundMoney(item.price * chargedUnits);
+        return { special, total };
+      })
+      .sort((first, second) => first.total - second.total);
     const best = offers[0];
     pricedLines.push({
       menu_item_id: item.id,
       quantity,
       notes: inputLine.notes ?? null,
-      unit_price: Math.max(0, best?.price ?? item.price),
+      unit_price: Math.max(0, best ? best.total / quantity : item.price),
       bundle_id: null,
       special_id: best?.special.id ?? null,
       special_name: best?.special.name ?? null,

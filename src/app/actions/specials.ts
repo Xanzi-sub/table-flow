@@ -17,6 +17,8 @@ export interface SpecialInput {
   itemIds: string[];
   discountType: MenuSpecialDiscountType;
   discountValue: number;
+  buyQuantity?: number;
+  payQuantity?: number;
   status: MenuItemStatus;
   startsAt?: string;
   endsAt?: string;
@@ -28,6 +30,12 @@ function validateSpecial(input: SpecialInput): string | null {
   if (input.kind === "combo" && input.itemIds.length < 2) return "A paired combo needs at least two items.";
   if (input.discountValue < 0) return "Price or discount cannot be negative.";
   if (input.discountType === "percentage" && input.discountValue > 100) return "Percentage cannot exceed 100%.";
+  if (input.discountType === "quantity_deal") {
+    const buy = input.buyQuantity ?? 1;
+    const pay = input.payQuantity ?? 1;
+    if (input.kind !== "item_discount") return "Quantity deals apply to individual menu items, not combos.";
+    if (buy <= pay) return "Buy quantity must be greater than pay quantity.";
+  }
   if (input.startsAt && input.endsAt && new Date(input.startsAt) >= new Date(input.endsAt)) {
     return "End date must be after the start date.";
   }
@@ -68,6 +76,8 @@ export async function createSpecial(input: SpecialInput): Promise<ActionResult<{
       item_ids: input.itemIds,
       discount_type: input.kind === "combo" ? "fixed_price" : input.discountType,
       discount_value: input.discountValue,
+      buy_quantity: input.discountType === "quantity_deal" ? input.buyQuantity ?? 2 : 1,
+      pay_quantity: input.discountType === "quantity_deal" ? input.payQuantity ?? 1 : 1,
       status: input.status,
       starts_at: input.startsAt || null,
       ends_at: input.endsAt || null,
@@ -95,6 +105,8 @@ export async function updateSpecial(id: string, input: SpecialInput): Promise<Ac
       item_ids: input.itemIds,
       discount_type: input.kind === "combo" ? "fixed_price" : input.discountType,
       discount_value: input.discountValue,
+      buy_quantity: input.discountType === "quantity_deal" ? input.buyQuantity ?? 2 : 1,
+      pay_quantity: input.discountType === "quantity_deal" ? input.payQuantity ?? 1 : 1,
       status: input.status,
       starts_at: input.startsAt || null,
       ends_at: input.endsAt || null,

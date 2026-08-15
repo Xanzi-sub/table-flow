@@ -27,6 +27,8 @@ interface FormState {
   itemIds: string[];
   discountType: MenuSpecialDiscountType;
   discountValue: string;
+  buyQuantity: string;
+  payQuantity: string;
   status: MenuItemStatus;
   startsAt: string;
   endsAt: string;
@@ -39,6 +41,8 @@ const EMPTY_FORM: FormState = {
   itemIds: [],
   discountType: "percentage",
   discountValue: "",
+  buyQuantity: "2",
+  payQuantity: "1",
   status: "draft",
   startsAt: "",
   endsAt: "",
@@ -64,7 +68,9 @@ function toInput(form: FormState): SpecialInput {
     kind: form.kind,
     itemIds: form.itemIds,
     discountType: form.kind === "combo" ? "fixed_price" : form.discountType,
-    discountValue: Number(form.discountValue),
+    discountValue: form.discountType === "quantity_deal" ? 0 : Number(form.discountValue),
+    buyQuantity: Number(form.buyQuantity),
+    payQuantity: Number(form.payQuantity),
     status: form.status,
     startsAt: form.startsAt ? new Date(form.startsAt).toISOString() : undefined,
     endsAt: form.endsAt ? new Date(form.endsAt).toISOString() : undefined,
@@ -79,6 +85,8 @@ function specialToForm(special: MenuSpecial): FormState {
     itemIds: special.item_ids,
     discountType: special.discount_type,
     discountValue: special.discount_value.toString(),
+    buyQuantity: special.buy_quantity.toString(),
+    payQuantity: special.pay_quantity.toString(),
     status: special.status,
     startsAt: toLocalInput(special.starts_at),
     endsAt: toLocalInput(special.ends_at),
@@ -126,45 +134,59 @@ export function SpecialsManager({
     event.preventDefault();
     setSaving(true);
     setError(null);
-    const input = toInput(form);
-    const result = editingId ? await updateSpecial(editingId, input) : await createSpecial(input);
-    setSaving(false);
+    try {
+      const input = toInput(form);
+      const result = editingId ? await updateSpecial(editingId, input) : await createSpecial(input);
 
-    if (!result.success || !result.data) {
-      setError(result.error ?? "Could not save special.");
-      return;
+      if (!result.success || !result.data) {
+        setError(result.error ?? "Could not save special.");
+        return;
+      }
+
+      setSpecials((current) =>
+        editingId
+          ? current.map((special) => (special.id === editingId ? result.data!.special : special))
+          : [result.data!.special, ...current]
+      );
+      resetForm();
+    } catch {
+      setError("The app was updated while this page was open. Refresh this page and try again.");
+    } finally {
+      setSaving(false);
     }
-
-    setSpecials((current) =>
-      editingId
-        ? current.map((special) => (special.id === editingId ? result.data!.special : special))
-        : [result.data!.special, ...current]
-    );
-    resetForm();
   }
 
   async function handleArchive(special: MenuSpecial) {
-    const result = await archiveSpecial(special.id);
-    if (!result.success) {
-      setError(result.error ?? "Could not archive special.");
-      return;
+    try {
+      const result = await archiveSpecial(special.id);
+      if (!result.success) {
+        setError(result.error ?? "Could not archive special.");
+        return;
+      }
+      setSpecials((current) =>
+        current.map((entry) => (entry.id === special.id ? { ...entry, status: "archived" } : entry))
+      );
+    } catch {
+      setError("The app was updated while this page was open. Refresh this page and try again.");
     }
-    setSpecials((current) =>
-      current.map((entry) => (entry.id === special.id ? { ...entry, status: "archived" } : entry))
-    );
   }
 
   async function handleDelete() {
     if (!deleteTarget) return;
     setDeleting(true);
-    const result = await deleteSpecial(deleteTarget.id);
-    setDeleting(false);
-    if (!result.success) {
-      setError(result.error ?? "Could not delete special.");
-      return;
+    try {
+      const result = await deleteSpecial(deleteTarget.id);
+      if (!result.success) {
+        setError(result.error ?? "Could not delete special.");
+        return;
+      }
+      setSpecials((current) => current.filter((special) => special.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch {
+      setError("The app was updated while this page was open. Refresh this page and try again.");
+    } finally {
+      setDeleting(false);
     }
-    setSpecials((current) => current.filter((special) => special.id !== deleteTarget.id));
-    setDeleteTarget(null);
   }
 
   const selectedItems = form.itemIds.map((id) => itemMap.get(id)).filter((item): item is MenuItem => Boolean(item));
@@ -257,24 +279,57 @@ export function SpecialsManager({
                   >
                     <option value="percentage">Percentage off</option>
                     <option value="fixed_price">Special price</option>
+                    <option value="quantity_deal">Buy X, pay for Y</option>
                   </Select>
                 </label>
               )}
-              <label className={`text-sm ${form.kind === "combo" ? "col-span-2" : ""}`}>
-                <span className="label">
-                  {form.kind === "combo" || form.discountType === "fixed_price" ? "Special price (R)" : "Discount (%)"}
-                </span>
-                <input
-                  required
-                  type="number"
-                  min={0}
-                  max={form.discountType === "percentage" ? 100 : undefined}
-                  step="0.01"
-                  value={form.discountValue}
-                  onChange={(event) => setForm((current) => ({ ...current, discountValue: event.target.value }))}
-                  className="input"
-                />
-              </label>
+              {form.discountType === "quantity_deal" && form.kind === "item_discount" ? (
+                <div className="col-span-2 grid grid-cols-2 gap-3 rounded-md border border-[var(--border)] bg-[var(--gray-25)] p-3">
+                  <label className="text-sm">
+                    <span className="label">Customer buys</span>
+                    <input
+                      required
+                      type="number"
+                      min={2}
+                      step="1"
+                      value={form.buyQuantity}
+                      onChange={(event) => setForm((current) => ({ ...current, buyQuantity: event.target.value }))}
+                      className="input"
+                    />
+                  </label>
+                  <label className="text-sm">
+                    <span className="label">Customer pays for</span>
+                    <input
+                      required
+                      type="number"
+                      min={1}
+                      step="1"
+                      value={form.payQuantity}
+                      onChange={(event) => setForm((current) => ({ ...current, payQuantity: event.target.value }))}
+                      className="input"
+                    />
+                  </label>
+                  <p className="col-span-2 text-xs text-[var(--foreground-muted)]">
+                    Example: buy 2 and pay for 1. Extra units outside a complete group are charged normally.
+                  </p>
+                </div>
+              ) : (
+                <label className={`text-sm ${form.kind === "combo" ? "col-span-2" : ""}`}>
+                  <span className="label">
+                    {form.kind === "combo" || form.discountType === "fixed_price" ? "Special price (R)" : "Discount (%)"}
+                  </span>
+                  <input
+                    required
+                    type="number"
+                    min={0}
+                    max={form.discountType === "percentage" ? 100 : undefined}
+                    step="0.01"
+                    value={form.discountValue}
+                    onChange={(event) => setForm((current) => ({ ...current, discountValue: event.target.value }))}
+                    className="input"
+                  />
+                </label>
+              )}
             </div>
 
             <label className="text-sm">
@@ -375,7 +430,9 @@ export function SpecialsManager({
                     <p className="text-lg font-bold text-[var(--foreground)]">
                       {special.discount_type === "percentage"
                         ? `${special.discount_value}% off`
-                        : formatCurrency(special.discount_value)}
+                        : special.discount_type === "quantity_deal"
+                          ? `Buy ${special.buy_quantity}, pay for ${special.pay_quantity}`
+                          : formatCurrency(special.discount_value)}
                     </p>
                     {special.kind === "combo" && (
                       <p className="text-[10px] text-[var(--foreground-muted)]">

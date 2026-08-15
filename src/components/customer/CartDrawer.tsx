@@ -30,6 +30,7 @@ export function CartDrawer({
     removeItem,
     totalAmount,
     totalItems,
+    getLineTotal,
     clear,
   } = useCart();
 
@@ -201,7 +202,11 @@ export function CartDrawer({
 
                             {line.specialName && (
                               <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-700">
-                                {line.kind === "combo" ? "Paired combo" : "Special applied"}
+                                {line.kind === "combo"
+                                  ? "Paired combo"
+                                  : line.specialDiscountType === "quantity_deal"
+                                    ? `Buy ${line.buyQuantity}, pay ${line.payQuantity}`
+                                    : "Special applied"}
                               </p>
                             )}
 
@@ -220,7 +225,7 @@ export function CartDrawer({
 
                           <p className="shrink-0 text-[14px] font-semibold text-[#171614]">
                             {formatCurrency(
-                              line.unitPrice * line.quantity
+                              getLineTotal(line)
                             )}
                           </p>
                         </div>

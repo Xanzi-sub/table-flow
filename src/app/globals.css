@@ -239,6 +239,34 @@ body {
 }
 .list-row:last-child { border-bottom: none; }
 
+/* Staff/admin workspace content is intentionally larger than the dense shell
+   labels. This scope leaves navigation dimensions untouched while lifting
+   page text, controls and action icons to a comfortable operational size. */
+.app-content .text-xs { font-size: 0.875rem; line-height: 1.25rem; }
+.app-content .text-sm { font-size: 1rem; line-height: 1.5rem; }
+.app-content .text-base { font-size: 1.125rem; line-height: 1.65rem; }
+.app-content .text-lg { font-size: 1.25rem; line-height: 1.75rem; }
+.app-content .text-xl { font-size: 1.5rem; line-height: 2rem; }
+.app-content .text-2xl { font-size: 1.875rem; line-height: 2.25rem; }
+.app-content .text-\[7px\] { font-size: 0.6875rem; line-height: 1rem; }
+.app-content .text-\[8px\] { font-size: 0.75rem; line-height: 1rem; }
+.app-content .text-\[9px\] { font-size: 0.8125rem; line-height: 1.125rem; }
+.app-content .text-\[10px\] { font-size: 0.875rem; line-height: 1.25rem; }
+.app-content .text-\[11px\] { font-size: 0.9375rem; line-height: 1.375rem; }
+.app-content .text-\[12px\] { font-size: 1rem; line-height: 1.5rem; }
+.app-content .text-\[13px\] { font-size: 1.0625rem; line-height: 1.5rem; }
+.app-content .text-\[14px\] { font-size: 1.125rem; line-height: 1.625rem; }
+.app-content .text-\[15px\] { font-size: 1.1875rem; line-height: 1.75rem; }
+.app-content .btn { font-size: 0.9375rem; line-height: 1.25rem; padding: 9px 14px; }
+.app-content .input { font-size: 0.9375rem; padding: 9px 12px; }
+.app-content .label { font-size: 0.75rem; }
+.app-content .badge { font-size: 0.6875rem; padding: 3px 9px; }
+.app-content .btn svg,
+.app-content button[aria-label] svg {
+  min-width: 18px;
+  min-height: 18px;
+}
+
 /* Drag handle used for reorderable rows (menu items, etc.) */
 .drag-handle {
   display: inline-flex;

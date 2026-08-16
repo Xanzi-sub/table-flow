@@ -653,7 +653,7 @@ export function StaffShell({
           </div>
         </div>
 
-        <main className="w-full flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-7 lg:py-7">{children}</main>
+        <main className="app-content w-full flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-7 lg:py-7">{children}</main>
       </div>
     </div>
   );

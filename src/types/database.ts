@@ -186,6 +186,8 @@ export interface Order {
   total_amount: number;
   tip_amount: number;
   tip_cashout_request_id: string | null;
+  loyalty_points_redeemed: number;
+  loyalty_discount_amount: number;
   created_at: string;
 }
 
@@ -268,6 +270,10 @@ export interface Database {
       mark_order_paid_with_loyalty: {
         Args: { p_order_id: string; p_method: PaymentMethod; p_tip_amount?: number };
         Returns: undefined;
+      };
+      apply_loyalty_redemption: {
+        Args: { p_order_id: string; p_points: number };
+        Returns: number;
       };
     };
     Enums: Record<string, never>;

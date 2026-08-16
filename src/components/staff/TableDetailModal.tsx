@@ -234,6 +234,12 @@ function OrderCard({
 
       {/* Order total */}
       <div className="border-t border-[#E7E9EC] bg-[#FAFBFC] px-4 py-3">
+        {order.loyalty_discount_amount > 0 && (
+          <div className="mb-2 flex items-center justify-between text-[9px] font-medium text-emerald-700">
+            <span>Loyalty · {order.loyalty_points_redeemed} points</span>
+            <span>−{formatCurrency(order.loyalty_discount_amount)}</span>
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-medium text-[#737983]">
             Order total

@@ -13,6 +13,10 @@ interface CartDrawerProps {
   tableId: string;
   customerSessionId: string;
   customerId: string | null;
+  loyaltyPoints: number;
+  loyaltyRewardThreshold: number;
+  loyaltyRewardValue: number;
+  onPointsChanged: (points: number) => void;
   onOrderSubmitted: (orderId: string) => void;
 }
 
@@ -22,6 +26,10 @@ export function CartDrawer({
   tableId,
   customerSessionId,
   customerId,
+  loyaltyPoints,
+  loyaltyRewardThreshold,
+  loyaltyRewardValue,
+  onPointsChanged,
   onOrderSubmitted,
 }: CartDrawerProps) {
   const {
@@ -36,6 +44,7 @@ export function CartDrawer({
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [applyLoyalty, setApplyLoyalty] = useState(false);
 
   if (!open) return null;
 
@@ -54,6 +63,7 @@ export function CartDrawer({
         quantity: l.quantity,
         notes: l.notes || undefined,
       })),
+      loyaltyPointsToUse: applyLoyalty ? redeemablePoints : 0,
     });
 
     setSubmitting(false);
@@ -64,6 +74,9 @@ export function CartDrawer({
     }
 
     clear();
+    if (result.data.loyaltyPointsRedeemed > 0) {
+      onPointsChanged(Math.max(0, loyaltyPoints - result.data.loyaltyPointsRedeemed));
+    }
     onOrderSubmitted(result.data.orderId);
   }
 
@@ -75,6 +88,13 @@ export function CartDrawer({
     return sum + regularUnit * line.quantity;
   }, 0);
   const savings = Math.max(0, regularAmount - totalAmount);
+  const availableRewardUnits =
+    loyaltyRewardThreshold > 0 ? Math.floor(loyaltyPoints / loyaltyRewardThreshold) : 0;
+  const usableRewardUnits =
+    loyaltyRewardValue > 0 ? Math.min(availableRewardUnits, Math.floor(totalAmount / loyaltyRewardValue)) : 0;
+  const redeemablePoints = usableRewardUnits * loyaltyRewardThreshold;
+  const loyaltyDiscount = applyLoyalty ? usableRewardUnits * loyaltyRewardValue : 0;
+  const finalAmount = Math.max(0, totalAmount - loyaltyDiscount);
 
   return (
     <div className="fixed inset-0 z-50 h-dvh overflow-hidden bg-[#171614]/60 backdrop-blur-[5px]">
@@ -323,13 +343,39 @@ export function CartDrawer({
                   <span className="text-[#99938a]">Included</span>
                 </div>
 
+                <label className={`mt-3 flex items-center justify-between gap-3 rounded-[13px] border p-3 ${
+                  usableRewardUnits > 0 ? "cursor-pointer border-[#d9d4cc] bg-white" : "border-[#e7e2da] bg-[#f3f0eb] opacity-60"
+                }`}>
+                  <span>
+                    <span className="block text-[12px] font-semibold text-[#171614]">Apply loyalty reward</span>
+                    <span className="mt-0.5 block text-[10px] text-[#99938a]">
+                      {usableRewardUnits > 0
+                        ? `Use ${redeemablePoints} points for ${formatCurrency(usableRewardUnits * loyaltyRewardValue)} off`
+                        : `${loyaltyPoints} points · ${loyaltyRewardThreshold} needed per reward`}
+                    </span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={applyLoyalty}
+                    disabled={usableRewardUnits === 0}
+                    onChange={(event) => setApplyLoyalty(event.target.checked)}
+                  />
+                </label>
+
+                {loyaltyDiscount > 0 && (
+                  <div className="mt-2 flex items-center justify-between text-[13px] font-semibold text-emerald-700">
+                    <span>Loyalty reward</span>
+                    <span>−{formatCurrency(loyaltyDiscount)}</span>
+                  </div>
+                )}
+
                 <div className="mt-4 flex items-end justify-between border-t border-[#e7e2da] pt-4">
                   <span className="text-[14px] font-semibold text-[#171614]">
                     Total
                   </span>
 
                   <span className="text-[22px] font-semibold tracking-[-0.03em] text-[#171614]">
-                    {formatCurrency(totalAmount)}
+                    {formatCurrency(finalAmount)}
                   </span>
                 </div>
 
@@ -368,7 +414,7 @@ export function CartDrawer({
                     <>
                       Place order
                       <span className="text-white/50">·</span>
-                      {formatCurrency(totalAmount)}
+                      {formatCurrency(finalAmount)}
                     </>
                   )}
                 </button>

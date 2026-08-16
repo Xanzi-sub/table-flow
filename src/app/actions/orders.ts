@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { ActionResult } from "./tables";
 import type { MenuItem, MenuSpecial, OrderStatus } from "@/types/database";
 
@@ -41,7 +42,8 @@ export async function submitOrder(input: {
   customerSessionId: string;
   customerId?: string;
   items: CartLine[];
-}): Promise<ActionResult<{ orderId: string }>> {
+  loyaltyPointsToUse?: number;
+}): Promise<ActionResult<{ orderId: string; totalAmount: number; loyaltyPointsRedeemed: number; loyaltyDiscount: number }>> {
   if (input.items.length === 0) {
     return { success: false, error: "Cart is empty" };
   }
@@ -176,8 +178,24 @@ export async function submitOrder(input: {
   );
 
   if (itemsError) {
-    await supabase.from("orders").delete().eq("id", order.id);
+    await createAdminClient().from("orders").delete().eq("id", order.id);
     return { success: false, error: itemsError.message };
+  }
+
+  let loyaltyDiscount = 0;
+  let loyaltyPointsRedeemed = 0;
+  if (input.customerId && (input.loyaltyPointsToUse ?? 0) > 0) {
+    const points = Math.floor(input.loyaltyPointsToUse ?? 0);
+    const { data: discount, error: redemptionError } = await supabase.rpc("apply_loyalty_redemption", {
+      p_order_id: order.id,
+      p_points: points,
+    });
+    if (redemptionError) {
+      await createAdminClient().from("orders").delete().eq("id", order.id);
+      return { success: false, error: redemptionError.message };
+    }
+    loyaltyDiscount = Number(discount ?? 0);
+    loyaltyPointsRedeemed = points;
   }
 
   // Table flips vacant -> dining via a SECURITY DEFINER DB trigger on orders
@@ -190,7 +208,15 @@ export async function submitOrder(input: {
     .catch(() => {});
 
   revalidatePath("/staff/dashboard");
-  return { success: true, data: { orderId: order.id } };
+  return {
+    success: true,
+    data: {
+      orderId: order.id,
+      totalAmount: roundMoney(totalAmount - loyaltyDiscount),
+      loyaltyPointsRedeemed,
+      loyaltyDiscount,
+    },
+  };
 }
 
 /** Customer flags they want to pay at the table (cash/Speedpoint) — alerts the waiter. */

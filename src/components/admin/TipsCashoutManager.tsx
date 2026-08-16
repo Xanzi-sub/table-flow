@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { resolveCashoutRequest } from "@/app/actions/tips";
+import { listAllCashoutRequests, resolveCashoutRequest } from "@/app/actions/tips";
+import { createClient } from "@/lib/supabase/client";
 import { formatCurrency, formatDateTime, formatStaffName } from "@/lib/utils";
 import type { TipCashoutStatus } from "@/types/database";
 
@@ -133,6 +134,25 @@ function ResolvePanel({
 export function TipsCashoutManager({ initialRequests }: { initialRequests: CashoutRequestRow[] }) {
   const [requests, setRequests] = useState(initialRequests);
   const [resolving, setResolving] = useState<CashoutRequestRow | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    async function refresh() {
+      const latest = await listAllCashoutRequests();
+      setRequests(latest as unknown as CashoutRequestRow[]);
+    }
+    const channel = supabase
+      .channel("admin-tip-cashouts")
+      .on("postgres_changes", { event: "*", schema: "public", table: "tip_cashout_requests" }, refresh)
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") void refresh();
+      });
+    const fallback = window.setInterval(refresh, 5000);
+    return () => {
+      window.clearInterval(fallback);
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   function handleResolved(id: string, patch: Partial<CashoutRequestRow>) {
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));

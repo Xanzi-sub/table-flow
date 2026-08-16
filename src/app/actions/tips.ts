@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { ActionResult } from "./tables";
 import type { TipCashoutStatus } from "@/types/database";
 
@@ -108,13 +109,32 @@ export async function listMyCashoutRequests(waiterId: string) {
 /** Manager/admin: full cash-out request history across every waiter. */
 export async function listAllCashoutRequests() {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data: profile } = await supabase
+    .from("staff_profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (!profile || profile.role === "waiter") return [];
+
+  const admin = createAdminClient();
+  const [{ data: requests, error }, { data: staff }] = await Promise.all([
+    admin
     .from("tip_cashout_requests")
-    .select("*, staff_profiles(full_name)")
-    .order("requested_at", { ascending: false });
+      .select("*")
+      .order("requested_at", { ascending: false }),
+    admin.from("staff_profiles").select("id, full_name"),
+  ]);
 
   if (error) return [];
-  return data;
+  const names = new Map((staff ?? []).map((member) => [member.id, member.full_name]));
+  return (requests ?? []).map((request) => ({
+    ...request,
+    staff_profiles: { full_name: names.get(request.waiter_id) ?? "Staff member" },
+  }));
 }
 
 /** Manager/admin approves (immediately or scheduled) or rejects a cash-out request. */

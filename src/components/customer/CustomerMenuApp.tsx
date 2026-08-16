@@ -186,46 +186,67 @@ function CartFab({ onOpen }: { onOpen: () => void }) {
 }
 
 function SpecialsRail({ specials, items }: { specials: MenuSpecial[]; items: MenuItem[] }) {
-  const { addCombo } = useCart();
+  const { addCombo, addItem } = useCart();
   const itemMap = useMemo(() => new Map(items.map((item) => [item.id, item])), [items]);
-  const combos = specials.filter((special) => special.kind === "combo");
-  if (combos.length === 0) return null;
+  if (specials.length === 0) return null;
+
+  function ruleLabel(special: MenuSpecial) {
+    if (special.kind === "combo") return formatCurrency(special.discount_value);
+    if (special.discount_type === "quantity_deal") {
+      return `Buy ${special.buy_quantity}, pay ${special.pay_quantity}`;
+    }
+    if (special.discount_type === "fixed_price") {
+      return `${special.applicable_quantity} for ${formatCurrency(special.discount_value)}`;
+    }
+    return `${special.discount_value}% off from ${special.applicable_quantity}`;
+  }
 
   return (
     <section className="shrink-0 border-b border-[#e7e2da] bg-[#f5f1eb] px-4 py-4">
       <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#99938a]">Specials</p>
-      <h2 className="mt-0.5 text-[17px] font-bold text-[#171614]">Paired offers</h2>
+      <h2 className="mt-0.5 text-[17px] font-bold text-[#171614]">Offers right now</h2>
       <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
-        {combos.map((special) => {
-          const comboItems = special.item_ids
+        {specials.map((special) => {
+          const specialItems = special.item_ids
             .map((id) => itemMap.get(id))
             .filter((item): item is MenuItem => Boolean(item));
-          const regularTotal = comboItems.reduce((sum, item) => sum + item.price, 0);
+          const regularTotal = specialItems.reduce((sum, item) => sum + item.price, 0);
+          const isCombo = special.kind === "combo";
+          const canQuickAdd = isCombo ? specialItems.length >= 2 : specialItems.length === 1;
           return (
             <article key={special.id} className="min-w-[270px] rounded-[18px] border border-[#e2dbd1] bg-white p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <span className="rounded-full bg-[#171614] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.1em] text-white">Combo</span>
+                  <span className="rounded-full bg-[#171614] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.1em] text-white">
+                    {isCombo ? "Combo" : "Special"}
+                  </span>
                   <h3 className="mt-2 truncate text-[14px] font-bold text-[#171614]">{special.name}</h3>
                   <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-[#77736d]">
-                    {special.description || comboItems.map((item) => item.name).join(" + ")}
+                    {special.description || specialItems.map((item) => item.name).join(isCombo ? " + " : ", ")}
                   </p>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="text-[15px] font-bold text-[#171614]">{formatCurrency(special.discount_value)}</p>
-                  {regularTotal > special.discount_value && (
+                  <p className="max-w-[110px] text-[13px] font-bold text-[#171614]">{ruleLabel(special)}</p>
+                  {isCombo && regularTotal > special.discount_value && (
                     <p className="text-[10px] text-[#aaa49b] line-through">{formatCurrency(regularTotal)}</p>
                   )}
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => addCombo(special, comboItems)}
-                disabled={comboItems.length < 2}
-                className="mt-3 w-full rounded-full bg-[#171614] py-2 text-[11px] font-semibold text-white disabled:opacity-40"
-              >
-                Add combo
-              </button>
+              {canQuickAdd ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    isCombo
+                      ? addCombo(special, specialItems)
+                      : addItem(specialItems[0], special.applicable_quantity, "")
+                  }
+                  className="mt-3 w-full rounded-full bg-[#171614] py-2 text-[11px] font-semibold text-white"
+                >
+                  {isCombo ? "Add combo" : `Add ${special.applicable_quantity}`}
+                </button>
+              ) : (
+                <p className="mt-3 text-[10px] text-[#99938a]">Available on {specialItems.length} menu items below.</p>
+              )}
             </article>
           );
         })}
@@ -539,7 +560,6 @@ function MenuAppContent({
             .from("orders")
             .select("id")
             .eq("customer_session_id", userId)
-            .eq("table_id", table.id)
             .order("created_at", { ascending: false }),
           supabase.from("customer_profiles").select("loyalty_points").eq("id", userId).maybeSingle(),
         ]);
@@ -757,6 +777,10 @@ function MenuAppContent({
             tableId={table.id}
             customerSessionId={identity.userId}
             customerId={identity.customerId}
+            loyaltyPoints={loyaltyPoints}
+            loyaltyRewardThreshold={loyaltyRewardThreshold}
+            loyaltyRewardValue={loyaltyRewardValue}
+            onPointsChanged={setLoyaltyPoints}
             onOrderSubmitted={(orderId) => {
               setCartOpen(false);
               setOrderIds((prev) => [orderId, ...prev]);

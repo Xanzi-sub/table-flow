@@ -124,9 +124,10 @@ function drawReceipt(
   dashed();
   y += 22;
 
-  const vatAmount = order.total_amount - order.total_amount / (1 + vatPercentage / 100);
-  const subtotal = order.total_amount - vatAmount;
-  const suggestedTip = order.total_amount * (tipPercentage / 100);
+  const grossTotal = order.total_amount + order.loyalty_discount_amount;
+  const vatAmount = grossTotal - grossTotal / (1 + vatPercentage / 100);
+  const subtotal = grossTotal - vatAmount;
+  const suggestedTip = grossTotal * (tipPercentage / 100);
 
   ctx.font = "500 11px system-ui, -apple-system, sans-serif";
   const row = (label: string, value: string, boldValue = false) => {
@@ -143,6 +144,12 @@ function drawReceipt(
 
   row("Subtotal", formatCurrency(subtotal));
   row(`VAT (${vatPercentage}%, incl.)`, formatCurrency(vatAmount));
+  if (order.loyalty_discount_amount > 0) {
+    row(
+      `Loyalty (${order.loyalty_points_redeemed} points)`,
+      `-${formatCurrency(order.loyalty_discount_amount)}`
+    );
+  }
   y += 6;
   dashed();
   y += 22;

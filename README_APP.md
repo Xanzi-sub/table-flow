@@ -196,11 +196,14 @@ public landing page uses the TableFlow green brand direction and larger logo.
 - **Native staff app:** Capacitor wraps the hosted `/staff/*` and `/admin/*`
   application for Android/iOS while guests continue using the web QR menu.
 - **Notifications:** `staff_notifications` is the persistent source of truth;
-  Realtime drives foreground UI/sound and FCM/APNs handle background or closed
-  apps. Tokens are stored per authenticated staff device. New orders, calls,
+  Realtime drives foreground UI/sound and FCM/APNs/Web Push handle background
+  or closed apps. Tokens are stored per authenticated staff device. New orders, calls,
   bill requests, cancellations, assignments and unassigned work are routed
   from authoritative database state.
-- **Database:** migrations currently run through `0027_staff_notifications.sql`.
+- **Install experience:** authenticated Chrome staff receive a native browser
+  install prompt when eligible; standalone installs are detected and not
+  prompted again. Safari receives Add to Home Screen guidance.
+- **Database:** migrations currently run through `0028_web_push_devices.sql`.
 
 See [README.md](README.md) for installation, environment variables, migrations,
 Edge Function deployment, routes and external support API examples.

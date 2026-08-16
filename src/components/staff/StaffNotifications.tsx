@@ -12,33 +12,37 @@ import { formatDateTime } from "@/lib/utils";
 import type { StaffNotification } from "@/types/database";
 
 const SOUND_KEY = "tableflow-alert-sound";
+let alertAudioContext: AudioContext | null = null;
 
 function notificationRoute(notification: StaffNotification) {
   const route = notification.metadata?.route;
   return typeof route === "string" && route.startsWith("/") ? route : "/staff/notifications";
 }
 
-function playAlertSound() {
+export function playAlertSound() {
   if (typeof window === "undefined" || window.localStorage.getItem(SOUND_KEY) === "off") return;
   const AudioContextClass = window.AudioContext;
   if (!AudioContextClass) return;
-  const context = new AudioContextClass();
-  const notes = [880, 1174, 880];
-  notes.forEach((frequency, index) => {
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    oscillator.frequency.value = frequency;
-    gain.gain.setValueAtTime(0.0001, context.currentTime + index * 0.16);
-    gain.gain.exponentialRampToValueAtTime(0.22, context.currentTime + index * 0.16 + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + index * 0.16 + 0.13);
-    oscillator.connect(gain).connect(context.destination);
-    oscillator.start(context.currentTime + index * 0.16);
-    oscillator.stop(context.currentTime + index * 0.16 + 0.14);
-  });
-  window.setTimeout(() => void context.close(), 800);
+  const context = alertAudioContext ?? new AudioContextClass();
+  alertAudioContext = context;
+  const ring = () => {
+    [880, 1174, 880].forEach((frequency, index) => {
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.frequency.value = frequency;
+      gain.gain.setValueAtTime(0.0001, context.currentTime + index * 0.16);
+      gain.gain.exponentialRampToValueAtTime(0.22, context.currentTime + index * 0.16 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + index * 0.16 + 0.13);
+      oscillator.connect(gain).connect(context.destination);
+      oscillator.start(context.currentTime + index * 0.16);
+      oscillator.stop(context.currentTime + index * 0.16 + 0.14);
+    });
+  };
+  if (context.state === "suspended") void context.resume().then(ring);
+  else ring();
 }
 
-function NativePushBridge({ staffId, venueId }: { staffId: string; venueId?: string | null }) {
+export function NativePushBridge({ staffId, venueId }: { staffId: string; venueId?: string | null }) {
   const [showPermission, setShowPermission] = useState(false);
   const [registering, setRegistering] = useState(false);
 
@@ -154,11 +158,9 @@ function NativePushBridge({ staffId, venueId }: { staffId: string; venueId?: str
 
 export function StaffNotificationCentre({
   staffId,
-  venueId,
   compact = false,
 }: {
   staffId: string;
-  venueId?: string | null;
   compact?: boolean;
 }) {
   const router = useRouter();
@@ -190,7 +192,22 @@ export function StaffNotificationCentre({
         (payload) => {
           const incoming = payload.new as StaffNotification;
           setNotifications((current) => [incoming, ...current.filter((item) => item.id !== incoming.id)]);
-          if (initialized.current) playAlertSound();
+          if (initialized.current) {
+            playAlertSound();
+            if (!Capacitor.isNativePlatform() && "Notification" in window && Notification.permission === "granted" && document.visibilityState === "visible") {
+              const systemNotification = new Notification(incoming.title, {
+                body: incoming.body,
+                icon: "/icons/icon-192.webp",
+                tag: incoming.id,
+                silent: false,
+              });
+              systemNotification.onclick = () => {
+                window.focus();
+                router.push(notificationRoute(incoming));
+                systemNotification.close();
+              };
+            }
+          }
         }
       )
       .on(
@@ -200,7 +217,7 @@ export function StaffNotificationCentre({
       )
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
-  }, [load, staffId]);
+  }, [load, router, staffId]);
 
   async function markRead(notification: StaffNotification) {
     if (!notification.read_at) {
@@ -228,7 +245,6 @@ export function StaffNotificationCentre({
 
   return (
     <>
-      <NativePushBridge staffId={staffId} venueId={venueId} />
       {compact ? (
         <div className="relative">
           <button onClick={() => setOpen((value) => !value)} aria-label={`Notifications, ${unread} unread`} className="relative flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50">

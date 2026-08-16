@@ -29,6 +29,14 @@ ZENDIO_API_KEY=                      # Zernio/Zendio WhatsApp Business API key (
 ZENDIO_RECEIPT_TEMPLATE=             # optional: approved WhatsApp template name for receipts
 
 SUPPORT_API_KEY=                     # random server-only bearer key for the external support app
+
+NEXT_PUBLIC_FIREBASE_API_KEY=        # Firebase web app configuration
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
+NEXT_PUBLIC_FIREBASE_VAPID_KEY=      # Firebase Cloud Messaging Web Push certificate key
 ```
 
 The `GEMINI_*` and `ZENDIO_*` values are only consumed by the Supabase Edge
@@ -53,13 +61,13 @@ supabase link --project-ref <your-project-ref>
 supabase db push
 ```
 
-This applies all migrations through `0027_staff_notifications.sql`. The migration
+This applies all migrations through `0028_web_push_devices.sql`. The migration
 history covers the core schema and storage, onboarding and staff invites,
 category groups, Zernio account data, waiter scoping and assignment, tips and
 service requests, loyalty and feedback, menu specials and quantity deals,
 order-scoped payments, loyalty redemption, support tickets, persistent rate
 limiting, financial constraints, service-request ownership, storage security,
-native staff devices and persistent notifications.
+native/web staff devices and persistent notifications.
 
 Do not skip older migrations on a fresh project. Supabase records which files
 have already been applied and only runs the missing migrations.
@@ -163,7 +171,7 @@ src/
   app/admin/                 # venue operations, CRM, menu, intelligence, staff and settings
   components/                # customer/staff/admin/onboarding UI split by surface
 supabase/
-  migrations/                # schema, RLS, triggers and RPCs through migration 0027
+  migrations/                # schema, RLS, triggers and RPCs through migration 0028
   functions/                 # AI extraction, WhatsApp campaigns, receipts and OTP
 ```
 
@@ -229,10 +237,27 @@ APNS_USE_SANDBOX=true # development only
 ```
 
 Then use `npm run cap:sync`, `npm run cap:android` or `npm run cap:ios`.
-The native app requests permission only inside authenticated staff/admin UI.
+The native app and browser PWA request permission only inside authenticated staff/admin UI.
 Android uses the high-priority `tableflow_alerts` channel with default sound;
 iOS requests default APNs sound. Realtime foreground alerts use the staff sound
 toggle. Device silent/focus settings can still silence operating-system alerts.
+
+Chrome on Android/desktop can also install TableFlow from its browser menu. The
+staff shell detects Chrome's `beforeinstallprompt` event and shows an Install
+TableFlow prompt only when the app is not already running in standalone mode.
+On iPhone/iPad it shows Safari's Share > Add to Home Screen instructions.
+Dismissed prompts remain hidden for seven days.
+
+With the Firebase public variables above and the FCM server credentials set,
+Chrome desktop/Android registers a browser device and receives background Web
+Push. Foreground Realtime alerts play TableFlow's sound and show a system
+notification. Background sound is requested, but the browser/operating system
+has final control: silent mode, Focus/Do Not Disturb, blocked site permissions
+or muted notification channels can suppress sound.
+
+Until those Firebase public variables and the FCM/APNs server secrets are set,
+the persistent notification centre and foreground Realtime sound still work,
+but background browser/native push delivery is not active.
 
 ## Dependency notes
 

@@ -36,6 +36,15 @@ export async function signInStaff(
 
 export async function signOutStaff() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) {
+    await supabase
+      .from("staff_devices")
+      .update({ is_active: false, last_seen_at: new Date().toISOString() })
+      .eq("staff_id", user.id);
+  }
   await supabase.auth.signOut();
   redirect("/staff/login");
 }

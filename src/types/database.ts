@@ -25,7 +25,7 @@ export interface StaffDevice {
   id: string;
   staff_id: string;
   venue_id: string | null;
-  platform: "android" | "ios";
+  platform: "android" | "ios" | "web";
   push_token: string;
   device_identifier: string;
   app_version: string | null;

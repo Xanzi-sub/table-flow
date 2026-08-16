@@ -5,7 +5,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-interface Device { id: string; platform: "android" | "ios"; push_token: string }
+interface Device { id: string; platform: "android" | "ios" | "web"; push_token: string }
 interface StaffNotification { id: string; title: string; body: string; metadata: Record<string, unknown> }
 
 async function googleAccessToken() {
@@ -42,6 +42,29 @@ async function sendAndroid(device: Device, notification: StaffNotification, acce
       notification: { title: notification.title, body: notification.body },
       data: { route, notificationId: notification.id },
       android: { priority: "high", notification: { sound: "default", channel_id: "tableflow_alerts" } },
+    } }),
+  });
+  return response.ok;
+}
+
+async function sendWeb(device: Device, notification: StaffNotification, accessToken: string) {
+  const projectId = Deno.env.get("FCM_PROJECT_ID");
+  if (!projectId) throw new Error("FCM_PROJECT_ID is not configured");
+  const route = typeof notification.metadata.route === "string" ? notification.metadata.route : "/staff/notifications";
+  const response = await fetch(`https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ message: {
+      token: device.push_token,
+      data: {
+        title: notification.title,
+        body: notification.body,
+        route,
+        notificationId: notification.id,
+      },
+      webpush: {
+        headers: { Urgency: "high" },
+      },
     } }),
   });
   return response.ok;
@@ -121,7 +144,9 @@ Deno.serve(async (request) => {
         try {
           const ok = device.platform === "android"
             ? await sendAndroid(device, notification, fcmToken ??= await googleAccessToken())
-            : await sendIos(device, notification, appleToken ??= await apnsToken());
+            : device.platform === "web"
+              ? await sendWeb(device, notification, fcmToken ??= await googleAccessToken())
+              : await sendIos(device, notification, appleToken ??= await apnsToken());
           if (ok) delivered += 1;
           else await admin.from("staff_devices").update({ is_active: false }).eq("id", device.id);
         } catch (error) {

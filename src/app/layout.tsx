@@ -13,8 +13,8 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
   },
   icons: {
-    icon: "/icons/icon-192.webp",
-    apple: "/icons/icon-192.webp",
+    icon: "/icon.png",
+    apple: "/apple-icon.png",
   },
 };
 

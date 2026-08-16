@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TableFlow — QR Ordering & Loyalty",
-  description: "QR-code table ordering, staff operations, and WhatsApp loyalty platform.",
+  title: "TableFlow | Restaurant Operations & Guest Growth",
+  description:
+    "QR ordering, live restaurant operations, loyalty, marketing and customer intelligence in one connected platform.",
 };
 
 export default function RootLayout({

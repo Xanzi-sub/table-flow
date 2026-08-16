@@ -187,6 +187,7 @@ function CartFab({ onOpen }: { onOpen: () => void }) {
 
 function SpecialsRail({ specials, items }: { specials: MenuSpecial[]; items: MenuItem[] }) {
   const { addCombo, addItem } = useCart();
+  const [expanded, setExpanded] = useState(false);
   const itemMap = useMemo(() => new Map(items.map((item) => [item.id, item])), [items]);
   if (specials.length === 0) return null;
 
@@ -202,10 +203,47 @@ function SpecialsRail({ specials, items }: { specials: MenuSpecial[]; items: Men
   }
 
   return (
-    <section className="shrink-0 border-b border-[#e7e2da] bg-[#f5f1eb] px-4 py-4">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#99938a]">Specials</p>
-      <h2 className="mt-0.5 text-[17px] font-bold text-[#171614]">Offers right now</h2>
-      <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
+    <section className="shrink-0 border-b border-[#dce5d7] bg-[#f2f8ec]">
+      <button
+        type="button"
+        onClick={() => setExpanded((value) => !value)}
+        aria-expanded={expanded}
+        aria-controls="active-specials"
+        className="flex min-h-14 w-full items-center justify-between gap-3 px-4 py-2.5 text-left"
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--accent-500)] text-[11px] font-bold text-white">
+            {specials.length}
+          </span>
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--accent-700)]">
+              {specials.length === 1 ? "Special available" : "Specials available"}
+            </p>
+            <p className="truncate text-[13px] font-bold text-[#171614]">
+              {expanded ? "Offers right now" : specials[0].name}
+            </p>
+          </div>
+        </div>
+        <span className="flex shrink-0 items-center gap-2 text-[11px] font-semibold text-[var(--accent-700)]">
+          {expanded ? "Hide offers" : "View offers"}
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`transition-transform ${expanded ? "rotate-180" : ""}`}
+            aria-hidden="true"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </span>
+      </button>
+
+      {expanded && <div id="active-specials" className="flex gap-3 overflow-x-auto border-t border-[#dce5d7] px-4 pb-4 pt-3">
         {specials.map((special) => {
           const specialItems = special.item_ids
             .map((id) => itemMap.get(id))
@@ -250,7 +288,7 @@ function SpecialsRail({ specials, items }: { specials: MenuSpecial[]; items: Men
             </article>
           );
         })}
-      </div>
+      </div>}
     </section>
   );
 }

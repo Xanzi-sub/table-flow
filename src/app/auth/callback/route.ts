@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { ensureBootstrap, claimStaffInvite } from "@/app/actions/onboarding";
+import { trustedSiteOrigin } from "@/lib/security";
 
 // Handles the redirect Supabase sends after a user confirms their email
 // (?code=...) or when confirmation fails (?error=...). Must be added to the
 // project's Auth → URL Configuration → Redirect URLs allowlist.
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
+  const origin = trustedSiteOrigin(request);
   const code = searchParams.get("code");
   const error = searchParams.get("error_description") ?? searchParams.get("error");
 

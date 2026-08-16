@@ -181,7 +181,19 @@ public landing page uses the TableFlow green brand direction and larger logo.
   never shipped to the browser.
 - **Resilience:** critical realtime views also refresh by polling and on browser
   visibility changes.
-- **Database:** migrations currently run through `0023_support_tickets.sql`.
+- **Abuse protection:** an atomic Postgres rate limiter protects authentication,
+  orders, service requests, feedback, imports, campaigns, support, cash-outs,
+  provider connections, receipts and OTP sends across serverless instances.
+- **API boundaries:** cookie-authenticated writes enforce same-origin JSON,
+  request-size limits and bounded fields. Redirects accept only internal paths
+  or the configured site origin.
+- **Uploads and AI:** only managers/admins can write menu storage; bucket MIME
+  and size restrictions are enforced, and AI extraction only fetches files
+  from this project's storage origin without redirects.
+- **Browser hardening:** HSTS, frame denial, MIME sniffing prevention,
+  referrer policy, permissions policy and a restrictive baseline CSP are sent
+  globally.
+- **Database:** migrations currently run through `0026_storage_security.sql`.
 
 See [README.md](README.md) for installation, environment variables, migrations,
 Edge Function deployment, routes and external support API examples.

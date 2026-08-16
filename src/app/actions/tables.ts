@@ -168,11 +168,14 @@ export async function markOrderPaid(
   method: PaymentMethod,
   tipAmount: number = 0
 ): Promise<ActionResult> {
+  if (!Number.isFinite(tipAmount) || tipAmount < 0 || tipAmount > 1000000) {
+    return { success: false, error: "Invalid tip amount" };
+  }
   const supabase = await createClient();
   const { error } = await supabase.rpc("mark_order_paid_with_loyalty", {
     p_order_id: orderId,
     p_method: method,
-    p_tip_amount: Math.max(0, tipAmount),
+    p_tip_amount: tipAmount,
   });
 
   if (error) return { success: false, error: error.message };

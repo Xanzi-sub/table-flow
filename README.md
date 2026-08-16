@@ -53,11 +53,12 @@ supabase link --project-ref <your-project-ref>
 supabase db push
 ```
 
-This applies all migrations through `0023_support_tickets.sql`. The migration
+This applies all migrations through `0026_storage_security.sql`. The migration
 history covers the core schema and storage, onboarding and staff invites,
 category groups, Zernio account data, waiter scoping and assignment, tips and
 service requests, loyalty and feedback, menu specials and quantity deals,
-order-scoped payments, loyalty redemption, and the support ticket workflow.
+order-scoped payments, loyalty redemption, support tickets, persistent rate
+limiting, financial constraints, service-request ownership and storage security.
 
 Do not skip older migrations on a fresh project. Supabase records which files
 have already been applied and only runs the missing migrations.
@@ -160,7 +161,7 @@ src/
   app/admin/                 # venue operations, CRM, menu, intelligence, staff and settings
   components/                # customer/staff/admin/onboarding UI split by surface
 supabase/
-  migrations/                # schema, RLS, triggers and RPCs through migration 0023
+  migrations/                # schema, RLS, triggers and RPCs through migration 0026
   functions/                 # AI extraction, WhatsApp campaigns, receipts and OTP
 ```
 
@@ -175,6 +176,17 @@ supabase/
   policy on `orders`, so a customer can only ever read their own order.
 - `SUPABASE_SERVICE_ROLE_KEY` is only ever used from `src/lib/supabase/admin.ts`
   (marked `server-only`) and in Edge Functions, never in client code.
+- High-abuse operations use an atomic Supabase-backed rate limiter so limits
+  persist across serverless instances. Raw emails, IPs and IDs are hashed
+  before storage. Login, orders, service requests, feedback, menu imports,
+  campaigns, support, cash-outs, Zernio and WhatsApp OTP sends are limited.
+- Cookie-authenticated API writes require a trusted origin, JSON content type
+  and bounded request body. Security headers prevent framing, MIME sniffing and
+  unsafe browser capabilities; production dependencies are audited with
+  `npm audit --omit=dev`.
+- Menu uploads are manager/admin-only, restricted by MIME type and size, and
+  AI extraction fetches only this project's Supabase Storage URLs without
+  following redirects.
 
 ## Pricing model
 

@@ -3,17 +3,45 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getFunctionErrorMessage } from "@/lib/supabase/function-error";
+import { enforceRateLimit, RateLimitError } from "@/lib/security";
 import type { ActionResult } from "./tables";
+
+function isTrustedStorageUrl(value: string) {
+  try {
+    const storageOrigin = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).origin;
+    const url = new URL(value);
+    return url.protocol === "https:" && url.origin === storageOrigin && url.pathname.startsWith("/storage/v1/object/");
+  } catch {
+    return false;
+  }
+}
+
+async function authorizeScan() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: profile } = await supabase.from("staff_profiles").select("role").eq("id", user.id).single();
+  if (!profile || profile.role === "waiter") return null;
+  return { supabase, user };
+}
 
 /** Creates a menu_scan_jobs row and triggers the `extract-menu-items` Edge Function. */
 export async function createScanJob(
   imageUrls: string[]
 ): Promise<ActionResult<{ jobId: string }>> {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  if (imageUrls.length < 1 || imageUrls.length > 20 || imageUrls.some((url) => !isTrustedStorageUrl(url))) {
+    return { success: false, error: "Invalid menu image URLs" };
+  }
+  const auth = await authorizeScan();
+  if (!auth) return { success: false, error: "Unauthorized" };
+  const { supabase, user } = auth;
+  try {
+    await enforceRateLimit({ scope: "menu-scan", identifier: user.id, limit: 10, windowSeconds: 60 * 60 });
+  } catch (error) {
+    return { success: false, error: error instanceof RateLimitError ? error.message : "Menu scanning is temporarily unavailable" };
+  }
 
   const { data: job, error } = await supabase
     .from("menu_scan_jobs")
@@ -60,12 +88,20 @@ export async function importMenuRowsFromSpreadsheet(
   rows: SpreadsheetRow[],
   sourceFileUrl: string
 ): Promise<ActionResult<{ jobId: string }>> {
-  if (rows.length === 0) return { success: false, error: "No rows to import" };
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  if (
+    rows.length === 0 ||
+    rows.length > 5000 ||
+    !isTrustedStorageUrl(sourceFileUrl) ||
+    rows.some((row) => !row.name?.trim() || row.name.length > 200 || !Number.isFinite(row.price) || row.price < 0 || row.price > 1000000)
+  ) return { success: false, error: "Invalid spreadsheet import" };
+  const auth = await authorizeScan();
+  if (!auth) return { success: false, error: "Unauthorized" };
+  const { supabase, user } = auth;
+  try {
+    await enforceRateLimit({ scope: "menu-import", identifier: user.id, limit: 10, windowSeconds: 60 * 60 });
+  } catch (error) {
+    return { success: false, error: error instanceof RateLimitError ? error.message : "Menu imports are temporarily unavailable" };
+  }
 
   const { data: job, error: jobError } = await supabase
     .from("menu_scan_jobs")

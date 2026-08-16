@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { enforceRateLimit, RateLimitError, readJsonBody } from "@/lib/security";
 import type { TipCashoutStatus } from "@/types/database";
 
 const VALID_STATUSES = new Set<TipCashoutStatus>(["pending", "scheduled", "approved", "rejected"]);
@@ -25,6 +26,12 @@ async function requireManagerOrAdmin() {
 export async function GET() {
   const auth = await requireManagerOrAdmin();
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    await enforceRateLimit({ scope: "cashout-read", identifier: auth.user.id, limit: 120, windowSeconds: 60 });
+  } catch (error) {
+    const retryAfter = error instanceof RateLimitError ? error.retryAfter : 60;
+    return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": String(retryAfter) } });
+  }
 
   const admin = createAdminClient();
   const [{ data: requests, error }, { data: staff }] = await Promise.all([
@@ -47,14 +54,24 @@ export async function PATCH(request: Request) {
   const auth = await requireManagerOrAdmin();
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = (await request.json()) as {
+  let body: {
     requestId?: string;
     status?: TipCashoutStatus;
     scheduledFor?: string;
     notes?: string;
   };
+  try {
+    body = await readJsonBody(request, 8_192);
+    await enforceRateLimit({ scope: "cashout-update", identifier: auth.user.id, limit: 40, windowSeconds: 60 * 60 });
+  } catch (error) {
+    const limited = error instanceof RateLimitError;
+    return NextResponse.json(
+      { error: limited ? "Too many requests" : error instanceof Error ? error.message : "Invalid request" },
+      { status: limited ? 429 : 400, headers: limited ? { "Retry-After": String(error.retryAfter) } : undefined }
+    );
+  }
 
-  if (!body.requestId || !body.status || !VALID_STATUSES.has(body.status)) {
+  if (!body.requestId || !body.status || !VALID_STATUSES.has(body.status) || (body.notes?.length ?? 0) > 2000) {
     return NextResponse.json({ error: "Invalid cash-out update" }, { status: 400 });
   }
 

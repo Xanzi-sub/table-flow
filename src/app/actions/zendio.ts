@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getVenueSettings } from "./onboarding";
+import { enforceRateLimit, RateLimitError } from "@/lib/security";
 import type { ActionResult } from "./tables";
 
 const ZENDIO_API_URL = process.env.ZENDIO_API_URL ?? "https://zernio.com/api/v1";
@@ -21,6 +22,17 @@ interface ZendioProfile {
   isDefault?: boolean;
 }
 
+async function requireZendioManager() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: profile } = await supabase.from("staff_profiles").select("role").eq("id", user.id).single();
+  if (!profile || profile.role === "waiter") return null;
+  return user;
+}
+
 /** Finds or creates the Zernio "profile" that groups this venue's connected accounts. */
 async function ensureZendioProfileId(apiKey: string): Promise<string> {
   const venue = await getVenueSettings();
@@ -30,6 +42,8 @@ async function ensureZendioProfileId(apiKey: string): Promise<string> {
 
   const listResponse = await fetch(`${ZENDIO_API_URL}/profiles?name=${encodeURIComponent(venueName)}`, {
     headers: { Authorization: `Bearer ${apiKey}` },
+    cache: "no-store",
+    signal: AbortSignal.timeout(15_000),
   });
   if (listResponse.ok) {
     const body = await listResponse.json();
@@ -44,6 +58,8 @@ async function ensureZendioProfileId(apiKey: string): Promise<string> {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({ name: venueName }),
+    cache: "no-store",
+    signal: AbortSignal.timeout(15_000),
   });
 
   if (!createResponse.ok) {
@@ -74,6 +90,13 @@ async function saveZendioProfileId(profileId: string) {
  * can navigate the browser there. No manual dashboard visit required.
  */
 export async function getWhatsAppConnectUrl(): Promise<ActionResult<{ authUrl: string }>> {
+  const user = await requireZendioManager();
+  if (!user) return { success: false, error: "Unauthorized" };
+  try {
+    await enforceRateLimit({ scope: "zendio-connect", identifier: user.id, limit: 10, windowSeconds: 60 * 60 });
+  } catch (error) {
+    return { success: false, error: error instanceof RateLimitError ? error.message : "WhatsApp connection is temporarily unavailable" };
+  }
   const apiKey = process.env.ZENDIO_API_KEY;
   if (!apiKey) {
     return {
@@ -97,7 +120,7 @@ export async function getWhatsAppConnectUrl(): Promise<ActionResult<{ authUrl: s
 
   const response = await fetch(
     `${ZENDIO_API_URL}/connect/whatsapp?profileId=${encodeURIComponent(profileId)}&redirect_url=${encodeURIComponent(redirectUrl)}`,
-    { headers: { Authorization: `Bearer ${apiKey}` } }
+    { headers: { Authorization: `Bearer ${apiKey}` }, cache: "no-store", signal: AbortSignal.timeout(15_000) }
   );
 
   if (!response.ok) {
@@ -119,6 +142,13 @@ export async function getWhatsAppConnectUrl(): Promise<ActionResult<{ authUrl: s
 export async function syncZendioWhatsAppAccount(): Promise<
   ActionResult<{ accountId: string; label: string }>
 > {
+  const user = await requireZendioManager();
+  if (!user) return { success: false, error: "Unauthorized" };
+  try {
+    await enforceRateLimit({ scope: "zendio-sync", identifier: user.id, limit: 30, windowSeconds: 60 * 60 });
+  } catch (error) {
+    return { success: false, error: error instanceof RateLimitError ? error.message : "WhatsApp sync is temporarily unavailable" };
+  }
   const apiKey = process.env.ZENDIO_API_KEY;
   if (!apiKey) {
     return {
@@ -129,6 +159,8 @@ export async function syncZendioWhatsAppAccount(): Promise<
 
   const response = await fetch(`${ZENDIO_API_URL}/accounts`, {
     headers: { Authorization: `Bearer ${apiKey}` },
+    cache: "no-store",
+    signal: AbortSignal.timeout(15_000),
   });
 
   if (!response.ok) {

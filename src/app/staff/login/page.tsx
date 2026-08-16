@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signInStaff } from "@/app/actions/auth";
 import { ensureBootstrap } from "@/app/actions/onboarding";
 import { AuthLayout } from "@/components/auth/AuthLayout";
+import { safeInternalRedirect } from "@/lib/safe-redirect";
 
 function StaffLoginForm() {
   const router = useRouter();
@@ -40,7 +41,7 @@ function StaffLoginForm() {
       return;
     }
 
-    router.push(searchParams.get("redirect") ?? "/staff/dashboard");
+    router.push(safeInternalRedirect(searchParams.get("redirect"), "/staff/dashboard"));
     router.refresh();
   }
 

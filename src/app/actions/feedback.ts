@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { enforceRateLimit, RateLimitError } from "@/lib/security";
 import type { ActionResult } from "./tables";
 import type { FeedbackRecoveryStatus } from "@/types/database";
 
@@ -10,11 +11,27 @@ export async function submitOrderFeedback(input: {
   rating: number;
   comment?: string;
 }): Promise<ActionResult> {
+  if (!Number.isFinite(input.rating) || (input.comment?.length ?? 0) > 2000) {
+    return { success: false, error: "Invalid feedback" };
+  }
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Your ordering session has expired." };
+  try {
+    await enforceRateLimit({
+      scope: "order-feedback",
+      identifier: `${user.id}:${input.orderId}`,
+      limit: 5,
+      windowSeconds: 60 * 60,
+    });
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof RateLimitError ? error.message : "Feedback is temporarily unavailable",
+    };
+  }
 
   const { data: order, error: orderError } = await supabase
     .from("orders")
@@ -52,6 +69,10 @@ export async function resolveFeedback(input: {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user || (input.notes?.length ?? 0) > 2000) return { success: false, error: "Unauthorized" };
+
+  const { data: profile } = await supabase.from("staff_profiles").select("role").eq("id", user.id).single();
+  if (!profile || profile.role === "waiter") return { success: false, error: "Unauthorized" };
 
   const { error } = await supabase
     .from("order_feedback")

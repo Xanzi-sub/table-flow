@@ -74,8 +74,19 @@ Deno.serve(async (req: Request) => {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   try {
+    if (req.headers.get("content-type")?.split(";")[0] !== "application/json") {
+      return new Response(JSON.stringify({ error: "Content-Type must be application/json" }), { status: 415 });
+    }
+    const authorization = req.headers.get("authorization");
+    if (!authorization) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authorization } },
+    });
+    const { data: { user } } = await userClient.auth.getUser();
+    if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+
     const { orderId } = await req.json();
-    if (!orderId) {
+    if (!orderId || !/^[0-9a-f-]{36}$/i.test(orderId)) {
       return new Response(JSON.stringify({ error: "orderId is required" }), { status: 400 });
     }
 
@@ -88,6 +99,22 @@ Deno.serve(async (req: Request) => {
     if (orderError || !order) {
       return new Response(JSON.stringify({ error: "Order not found" }), { status: 404 });
     }
+    if (order.customer_session_id !== user.id) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
+    }
+
+    const identifierHash = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(`${SUPABASE_SERVICE_ROLE_KEY}:${user.id}:${orderId}`)
+    );
+    const { data: limit, error: limitError } = await supabase.rpc("consume_rate_limit", {
+      p_scope: "edge-order-receipt",
+      p_identifier_hash: Array.from(new Uint8Array(identifierHash)).map((byte) => byte.toString(16).padStart(2, "0")).join(""),
+      p_limit: 3,
+      p_window_seconds: 24 * 60 * 60,
+    });
+    if (limitError) throw new Error("Receipt rate limiting is unavailable");
+    if (!limit?.[0]?.allowed) return new Response(JSON.stringify({ error: "Receipt send limit reached" }), { status: 429 });
 
     let phoneNumber: string | null = null;
     if (order.customer_id) {

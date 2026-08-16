@@ -4,19 +4,38 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { createScanJob, importMenuRowsFromSpreadsheet, type SpreadsheetRow } from "@/app/actions/scan";
 
-const SPREADSHEET_EXTENSIONS = [".xlsx", ".xls", ".csv"];
+const SPREADSHEET_EXTENSIONS = [".xlsx", ".csv"];
+const MAX_MENU_FILES = 20;
+const MAX_MENU_FILE_BYTES = 10 * 1024 * 1024;
+const MAX_SPREADSHEET_BYTES = 5 * 1024 * 1024;
+const MAX_SPREADSHEET_ROWS = 5000;
 
 function findColumn(headers: string[], candidates: string[]): number {
   return headers.findIndex((h) => candidates.includes(h.trim().toLowerCase()));
 }
 
 async function parseSpreadsheetFile(file: File): Promise<SpreadsheetRow[]> {
-  const XLSX = await import("xlsx");
-  const buffer = await file.arrayBuffer();
-  const workbook = XLSX.read(buffer, { type: "array" });
-  const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rows: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+  if (file.size > MAX_SPREADSHEET_BYTES) throw new Error("Spreadsheet must be 5 MB or smaller");
+  const extension = file.name.toLowerCase().slice(file.name.lastIndexOf("."));
+  let rows: unknown[][];
+
+  if (extension === ".csv") {
+    const Papa = (await import("papaparse")).default;
+    const result = Papa.parse<unknown[]>(await file.text(), {
+      skipEmptyLines: true,
+      preview: MAX_SPREADSHEET_ROWS + 2,
+    });
+    if (result.errors.length) throw new Error("Could not parse that CSV file");
+    rows = result.data;
+  } else if (extension === ".xlsx") {
+    const readXlsxFile = (await import("read-excel-file/browser")).default;
+    rows = (await readXlsxFile(file)) as unknown as unknown[][];
+  } else {
+    throw new Error("Only .xlsx and .csv files are supported");
+  }
+
   if (rows.length === 0) return [];
+  if (rows.length > MAX_SPREADSHEET_ROWS + 1) throw new Error(`Spreadsheet cannot exceed ${MAX_SPREADSHEET_ROWS} data rows`);
 
   const headers = (rows[0] as unknown[]).map((h) => String(h ?? ""));
   const groupCol = findColumn(headers, ["group", "main category", "section group"]);
@@ -60,14 +79,20 @@ export function MenuScanUploader({ onCreated }: { onCreated: (jobId: string) => 
     setError(null);
 
     try {
+      if (files.length > MAX_MENU_FILES) throw new Error(`Upload no more than ${MAX_MENU_FILES} files per scan`);
+      if (files.some((file) => file.size > MAX_MENU_FILE_BYTES)) throw new Error("Each menu file must be 10 MB or smaller");
+      if (files.some((file) => !file.type.startsWith("image/") && file.type !== "application/pdf")) {
+        throw new Error("Menu scans must be images or PDF files");
+      }
       const supabase = createClient();
       const imageUrls: string[] = [];
 
       for (const file of files) {
-        const path = `scans/${crypto.randomUUID()}-${file.name}`;
+        const extension = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")).toLowerCase() : "";
+        const path = `scans/${crypto.randomUUID()}${extension}`;
         const { error: uploadError } = await supabase.storage
           .from("menu-photos")
-          .upload(path, file);
+          .upload(path, file, { contentType: file.type, upsert: false });
 
         if (uploadError) throw new Error(uploadError.message);
 
@@ -100,8 +125,12 @@ export function MenuScanUploader({ onCreated }: { onCreated: (jobId: string) => 
       if (rows.length === 0) throw new Error("No usable rows found in that file");
 
       const supabase = createClient();
-      const path = `scans/${crypto.randomUUID()}-${sheetFile.name}`;
-      const { error: uploadError } = await supabase.storage.from("menu-photos").upload(path, sheetFile);
+      const extension = sheetFile.name.toLowerCase().slice(sheetFile.name.lastIndexOf("."));
+      const path = `scans/${crypto.randomUUID()}${extension}`;
+      const { error: uploadError } = await supabase.storage.from("menu-photos").upload(path, sheetFile, {
+        contentType: sheetFile.type || (extension === ".csv" ? "text/csv" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+        upsert: false,
+      });
       if (uploadError) throw new Error(uploadError.message);
       const {
         data: { publicUrl },
@@ -155,7 +184,7 @@ export function MenuScanUploader({ onCreated }: { onCreated: (jobId: string) => 
       <div className="mt-6 border-t border-[var(--border)] pt-4">
         <h3 className="text-sm font-bold text-[var(--foreground)]">Or import from a spreadsheet</h3>
         <p className="mt-1 text-xs text-[var(--foreground-muted)]">
-          Excel (.xlsx/.xls) or CSV with columns: group, category, name, description, price.
+          Excel (.xlsx) or CSV with columns: group, category, name, description, price. Maximum 5 MB and 5,000 rows.
         </p>
         <input
           type="file"

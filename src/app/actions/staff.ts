@@ -6,7 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { ActionResult } from "./tables";
 import type { UserRole } from "@/types/database";
 
-async function assertManagerOrAdmin() {
+async function requireManagerOrAdmin() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -22,6 +22,7 @@ async function assertManagerOrAdmin() {
   if (!profile || profile.role === "waiter") {
     throw new Error("Only managers/admins can manage staff");
   }
+  return { user, profile };
 }
 
 export async function listStaff() {
@@ -38,7 +39,13 @@ export async function updateStaffRole(
   role: UserRole
 ): Promise<ActionResult> {
   try {
-    await assertManagerOrAdmin();
+    const actor = await requireManagerOrAdmin();
+    if (actor.profile.role !== "admin" && role !== "waiter") {
+      return { success: false, error: "Only admins can assign manager or admin roles" };
+    }
+    if (actor.user.id === id && role !== "admin") {
+      return { success: false, error: "You cannot remove your own admin access" };
+    }
   } catch (err) {
     return { success: false, error: (err as Error).message };
   }
@@ -53,13 +60,13 @@ export async function updateStaffRole(
 
 export async function updateStaffName(id: string, fullName: string): Promise<ActionResult> {
   try {
-    await assertManagerOrAdmin();
+    await requireManagerOrAdmin();
   } catch (err) {
     return { success: false, error: (err as Error).message };
   }
 
   const name = fullName.trim();
-  if (!name || name.includes("@")) {
+  if (!name || name.length > 200 || name.includes("@")) {
     return { success: false, error: "Enter the staff member's name, not an email address." };
   }
 
@@ -74,7 +81,13 @@ export async function updateStaffName(id: string, fullName: string): Promise<Act
 
 export async function removeStaffMember(id: string): Promise<ActionResult> {
   try {
-    await assertManagerOrAdmin();
+    const actor = await requireManagerOrAdmin();
+    if (actor.profile.role !== "admin") {
+      return { success: false, error: "Only admins can remove staff accounts" };
+    }
+    if (actor.user.id === id) {
+      return { success: false, error: "You cannot remove your own admin account" };
+    }
   } catch (err) {
     return { success: false, error: (err as Error).message };
   }

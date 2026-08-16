@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getFunctionErrorMessage } from "@/lib/supabase/function-error";
+import { enforceRateLimit, RateLimitError } from "@/lib/security";
 import type { ActionResult } from "./tables";
 
 /** Drafts a WhatsApp campaign and triggers the throttled Zendio batch-send Edge Function. */
@@ -12,11 +13,30 @@ export async function createCampaign(input: {
   daysSinceLastVisit?: number;
   customerIds?: string[];
 }): Promise<ActionResult<{ campaignId: string }>> {
+  if (
+    !input.title.trim() ||
+    input.title.length > 160 ||
+    !input.messageBody.trim() ||
+    input.messageBody.length > 4000 ||
+    (input.customerIds?.length ?? 0) > 5000 ||
+    (input.daysSinceLastVisit !== undefined &&
+      (!Number.isInteger(input.daysSinceLastVisit) || input.daysSinceLastVisit < 0 || input.daysSinceLastVisit > 3650))
+  ) {
+    return { success: false, error: "Invalid campaign details" };
+  }
   const supabase = await createClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Unauthorized" };
+  const { data: profile } = await supabase.from("staff_profiles").select("role").eq("id", user.id).single();
+  if (!profile || profile.role === "waiter") return { success: false, error: "Unauthorized" };
+  try {
+    await enforceRateLimit({ scope: "marketing-campaign", identifier: user.id, limit: 5, windowSeconds: 60 * 60 });
+  } catch (error) {
+    return { success: false, error: error instanceof RateLimitError ? error.message : "Campaigns are temporarily unavailable" };
+  }
 
   let recipientCountQuery = supabase
     .from("customer_profiles")

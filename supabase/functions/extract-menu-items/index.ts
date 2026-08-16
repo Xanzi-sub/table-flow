@@ -84,10 +84,22 @@ const PROMPT =
 // edge function outright (an ungraceful worker crash, not a catchable JS
 // error) — that produced the generic, non-JSON 500s seen in testing.
 async function imageUrlToInlinePart(url: string) {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Could not fetch menu photo: ${url}`);
-  const mimeType = response.headers.get("content-type") ?? "image/jpeg";
+  const parsed = new URL(url);
+  const storageOrigin = new URL(SUPABASE_URL).origin;
+  if (parsed.protocol !== "https:" || parsed.origin !== storageOrigin || !parsed.pathname.startsWith("/storage/v1/object/")) {
+    throw new Error("Menu photo URL is not from this project's storage");
+  }
+
+  const response = await fetch(parsed, { redirect: "error" });
+  if (!response.ok) throw new Error("Could not fetch menu photo");
+  const mimeType = response.headers.get("content-type")?.split(";")[0] ?? "";
+  if (!mimeType.startsWith("image/") && mimeType !== "application/pdf") {
+    throw new Error("Unsupported menu file type");
+  }
+  const declaredLength = Number(response.headers.get("content-length") ?? 0);
+  if (declaredLength > 10 * 1024 * 1024) throw new Error("Menu file exceeds 10 MB");
   const bytes = new Uint8Array(await response.arrayBuffer());
+  if (bytes.length > 10 * 1024 * 1024) throw new Error("Menu file exceeds 10 MB");
 
   const CHUNK_SIZE = 8192;
   const chunks: string[] = [];
@@ -104,9 +116,24 @@ Deno.serve(async (req: Request) => {
   let scanJobId: string | undefined;
 
   try {
+    if (req.headers.get("content-type")?.split(";")[0] !== "application/json") {
+      return new Response(JSON.stringify({ error: "Content-Type must be application/json" }), { status: 415 });
+    }
+    const authorization = req.headers.get("authorization");
+    if (!authorization) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authorization } },
+    });
+    const { data: { user } } = await userClient.auth.getUser();
+    if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    const { data: staff } = await supabase.from("staff_profiles").select("role").eq("id", user.id).single();
+    if (!staff || staff.role === "waiter") {
+      return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
+    }
+
     const body = await req.json();
     scanJobId = body.scanJobId;
-    if (!scanJobId) {
+    if (!scanJobId || !/^[0-9a-f-]{36}$/i.test(scanJobId)) {
       return new Response(JSON.stringify({ error: "scanJobId is required" }), {
         status: 400,
       });

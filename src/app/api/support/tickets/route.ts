@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { formatStaffName } from "@/lib/utils";
+import { enforceRateLimit, getRequestIpFromHeaders, RateLimitError, readJsonBody } from "@/lib/security";
 import type {
   SupportTicketCategory,
   SupportTicketPriority,
@@ -100,6 +101,17 @@ async function ticketPayload(ticketId?: string, options?: { includeInternal?: bo
 export async function GET(request: Request) {
   const identity = await authenticate(request);
   if (!identity) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    await enforceRateLimit({
+      scope: "support-read",
+      identifier: `${identity.type}:${identity.id}:${getRequestIpFromHeaders(request.headers)}`,
+      limit: identity.type === "support" ? 300 : 120,
+      windowSeconds: 60,
+    });
+  } catch (error) {
+    const retryAfter = error instanceof RateLimitError ? error.retryAfter : 60;
+    return NextResponse.json({ error: "Too many requests" }, { status: 429, headers: { "Retry-After": String(retryAfter) } });
+  }
 
   const url = new URL(request.url);
   const ticketId = url.searchParams.get("ticketId") ?? undefined;
@@ -128,7 +140,7 @@ export async function POST(request: Request) {
   const identity = await authenticate(request);
   if (!identity) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = (await request.json()) as {
+  let body: {
     action?: "create" | "reply";
     ticketId?: string;
     subject?: string;
@@ -138,11 +150,26 @@ export async function POST(request: Request) {
     message?: string;
     isInternal?: boolean;
   };
+  try {
+    body = await readJsonBody(request, 16_384, identity.type === "venue");
+    await enforceRateLimit({
+      scope: "support-write",
+      identifier: `${identity.type}:${identity.id}`,
+      limit: identity.type === "support" ? 300 : 20,
+      windowSeconds: 60 * 60,
+    });
+  } catch (error) {
+    const limited = error instanceof RateLimitError;
+    return NextResponse.json(
+      { error: limited ? "Too many requests" : error instanceof Error ? error.message : "Invalid request" },
+      { status: limited ? 429 : 400, headers: limited ? { "Retry-After": String(error.retryAfter) } : undefined }
+    );
+  }
   const admin = createAdminClient();
 
   if (body.action === "create") {
     if (identity.type !== "venue") return NextResponse.json({ error: "Only venues create tickets" }, { status: 403 });
-    if (!body.subject?.trim() || !body.description?.trim() || !body.category || !CATEGORIES.has(body.category)) {
+    if (!body.subject?.trim() || body.subject.length > 200 || !body.description?.trim() || body.description.length > 10000 || !body.category || !CATEGORIES.has(body.category)) {
       return NextResponse.json({ error: "Subject, description and category are required" }, { status: 400 });
     }
     const priority = body.priority && PRIORITIES.has(body.priority) ? body.priority : "normal";
@@ -173,7 +200,7 @@ export async function POST(request: Request) {
   }
 
   if (body.action === "reply") {
-    if (!body.ticketId || !body.message?.trim()) {
+    if (!body.ticketId || !body.message?.trim() || body.message.length > 10000) {
       return NextResponse.json({ error: "Ticket and message are required" }, { status: 400 });
     }
     const database = identity.type === "support" ? admin : await createClient();
@@ -200,7 +227,7 @@ export async function PATCH(request: Request) {
   const identity = await authenticate(request);
   if (!identity) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = (await request.json()) as {
+  let body: {
     ticketId?: string;
     status?: SupportTicketStatus;
     priority?: SupportTicketPriority;
@@ -209,6 +236,27 @@ export async function PATCH(request: Request) {
     externalReference?: string | null;
     resolutionSummary?: string | null;
   };
+  try {
+    body = await readJsonBody(request, 16_384, identity.type === "venue");
+    await enforceRateLimit({
+      scope: "support-update",
+      identifier: `${identity.type}:${identity.id}`,
+      limit: identity.type === "support" ? 300 : 40,
+      windowSeconds: 60 * 60,
+    });
+  } catch (error) {
+    const limited = error instanceof RateLimitError;
+    return NextResponse.json(
+      { error: limited ? "Too many requests" : error instanceof Error ? error.message : "Invalid request" },
+      { status: limited ? 429 : 400, headers: limited ? { "Retry-After": String(error.retryAfter) } : undefined }
+    );
+  }
+  if (
+    (body.externalAssigneeId?.length ?? 0) > 200 ||
+    (body.externalAssigneeName?.length ?? 0) > 200 ||
+    (body.externalReference?.length ?? 0) > 500 ||
+    (body.resolutionSummary?.length ?? 0) > 10000
+  ) return NextResponse.json({ error: "Support update is too large" }, { status: 400 });
   if (!body.ticketId) return NextResponse.json({ error: "Ticket is required" }, { status: 400 });
   if (body.status && !STATUSES.has(body.status)) return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   if (body.priority && !PRIORITIES.has(body.priority)) return NextResponse.json({ error: "Invalid priority" }, { status: 400 });

@@ -61,15 +61,41 @@ Deno.serve(async (req: Request) => {
   let campaignId: string | undefined;
 
   try {
+    if (req.headers.get("content-type")?.split(";")[0] !== "application/json") {
+      return new Response(JSON.stringify({ error: "Content-Type must be application/json" }), { status: 415 });
+    }
+    const authorization = req.headers.get("authorization");
+    if (!authorization) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authorization } },
+    });
+    const { data: { user } } = await userClient.auth.getUser();
+    if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    const { data: staff } = await supabase.from("staff_profiles").select("role").eq("id", user.id).single();
+    if (!staff || staff.role === "waiter") return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403 });
+
     const body = await req.json();
     campaignId = body.campaignId;
     const daysSinceLastVisit = body.daysSinceLastVisit;
     const customerIds: string[] | null = Array.isArray(body.customerIds) ? body.customerIds : null;
-    if (!campaignId) {
+    if (!campaignId || !/^[0-9a-f-]{36}$/i.test(campaignId) || (customerIds?.length ?? 0) > 5000) {
       return new Response(JSON.stringify({ error: "campaignId is required" }), {
         status: 400,
       });
     }
+
+    const identifierHash = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(`${SUPABASE_SERVICE_ROLE_KEY}:${user.id}:${campaignId}`)
+    );
+    const { data: limit, error: limitError } = await supabase.rpc("consume_rate_limit", {
+      p_scope: "edge-marketing-campaign",
+      p_identifier_hash: Array.from(new Uint8Array(identifierHash)).map((byte) => byte.toString(16).padStart(2, "0")).join(""),
+      p_limit: 2,
+      p_window_seconds: 24 * 60 * 60,
+    });
+    if (limitError) throw new Error("Campaign rate limiting is unavailable");
+    if (!limit?.[0]?.allowed) return new Response(JSON.stringify({ error: "Campaign already processed" }), { status: 429 });
 
     const { data: campaign, error: campaignError } = await supabase
       .from("marketing_campaigns")

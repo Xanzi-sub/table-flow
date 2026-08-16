@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { enforceRateLimit, RateLimitError } from "@/lib/security";
 import type { ActionResult } from "./tables";
 import type { MenuItem, MenuSpecial, OrderStatus } from "@/types/database";
 
@@ -25,6 +26,7 @@ interface PricedOrderLine {
 }
 
 const roundMoney = (value: number) => Math.round(value * 100) / 100;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function specialAuditLabel(special: MenuSpecial) {
   if (special.discount_type === "quantity_deal") {
@@ -44,11 +46,44 @@ export async function submitOrder(input: {
   items: CartLine[];
   loyaltyPointsToUse?: number;
 }): Promise<ActionResult<{ orderId: string; totalAmount: number; loyaltyPointsRedeemed: number; loyaltyDiscount: number }>> {
-  if (input.items.length === 0) {
-    return { success: false, error: "Cart is empty" };
+  if (!UUID_PATTERN.test(input.tableId) || input.items.length === 0 || input.items.length > 50) {
+    return { success: false, error: "Invalid order" };
   }
-
+  if (
+    input.items.some(
+      (line) =>
+        !Number.isFinite(line.quantity) ||
+        line.quantity < 1 ||
+        line.quantity > 99 ||
+        (line.menuItemId !== undefined && !UUID_PATTERN.test(line.menuItemId)) ||
+        (line.specialId !== undefined && !UUID_PATTERN.test(line.specialId)) ||
+        (line.notes?.length ?? 0) > 500
+    ) ||
+    (input.loyaltyPointsToUse !== undefined &&
+      (!Number.isFinite(input.loyaltyPointsToUse) || input.loyaltyPointsToUse < 0 || input.loyaltyPointsToUse > 1000000))
+  ) {
+    return { success: false, error: "Invalid order details" };
+  }
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || input.customerSessionId !== user.id) {
+    return { success: false, error: "Your ordering session has expired." };
+  }
+  try {
+    await enforceRateLimit({
+      scope: "submit-order",
+      identifier: user.id,
+      limit: 10,
+      windowSeconds: 60,
+    });
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof RateLimitError ? error.message : "Ordering is temporarily unavailable",
+    };
+  }
   const { data: activeSpecialRows, error: specialsError } = await supabase
     .from("menu_specials")
     .select("*")
@@ -223,7 +258,25 @@ export async function submitOrder(input: {
 export async function requestTableService(
   tableId: string
 ): Promise<ActionResult> {
+  if (!UUID_PATTERN.test(tableId)) return { success: false, error: "Invalid table" };
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Your ordering session has expired." };
+  try {
+    await enforceRateLimit({
+      scope: "table-service",
+      identifier: `${user.id}:${tableId}`,
+      limit: 3,
+      windowSeconds: 60,
+    });
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof RateLimitError ? error.message : "Service requests are temporarily unavailable",
+    };
+  }
   // Direct table UPDATE is staff-only under RLS — this RPC is SECURITY
   // DEFINER so an anonymous customer session can still flag their own table.
   const { error } = await supabase.rpc("request_table_service", { p_table_id: tableId });

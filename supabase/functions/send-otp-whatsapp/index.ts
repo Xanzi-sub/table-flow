@@ -18,6 +18,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
+import { createHash } from "node:crypto";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -65,6 +66,22 @@ Deno.serve(async (req: Request) => {
     }
 
     const phone = verified.user.phone.startsWith("+") ? verified.user.phone : `+${verified.user.phone}`;
+    const identifierHash = createHash("sha256")
+      .update(`${SUPABASE_SERVICE_ROLE_KEY}:${phone}`)
+      .digest("hex");
+    const { data: limit, error: limitError } = await supabase.rpc("consume_rate_limit", {
+      p_scope: "whatsapp-otp",
+      p_identifier_hash: identifierHash,
+      p_limit: 3,
+      p_window_seconds: 60 * 60,
+    });
+    if (limitError) throw new Error("OTP rate limiting is unavailable");
+    if (!limit?.[0]?.allowed) {
+      return new Response(
+        JSON.stringify({ error: { http_code: 429, message: "Too many verification attempts. Try again later." } }),
+        { status: 429, headers: { "Retry-After": String(limit?.[0]?.retry_after_seconds ?? 3600) } }
+      );
+    }
 
     // One-off "broadcast" of a single recipient — Zernio has no single-send
     // endpoint for templates, so this mirrors send-marketing-campaign's pattern.
@@ -87,7 +104,7 @@ Deno.serve(async (req: Request) => {
 
     return new Response(JSON.stringify({}), { status: 200, headers: { "Content-Type": "application/json" } });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return new Response(JSON.stringify({ error: { http_code: 500, message } }), { status: 500 });
+    console.error(err instanceof Error ? err.message : "OTP delivery failed");
+    return new Response(JSON.stringify({ error: { http_code: 500, message: "OTP delivery failed" } }), { status: 500 });
   }
 });

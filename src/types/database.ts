@@ -327,6 +327,15 @@ export interface Database {
         Args: { p_order_id: string; p_points: number };
         Returns: number;
       };
+      consume_rate_limit: {
+        Args: {
+          p_scope: string;
+          p_identifier_hash: string;
+          p_limit: number;
+          p_window_seconds: number;
+        };
+        Returns: Array<{ allowed: boolean; remaining: number; retry_after_seconds: number }>;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

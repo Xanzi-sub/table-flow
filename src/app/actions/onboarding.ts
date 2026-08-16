@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { ActionResult } from "./tables";
 import type { UserRole } from "@/types/database";
+import { enforceRateLimit, RateLimitError } from "@/lib/security";
 
 /**
  * First-run only: turns the current auth user into the venue's sole admin.
@@ -77,6 +78,20 @@ export async function saveVenueSettings(input: {
   loyaltyRewardValue?: number;
 }): Promise<ActionResult> {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Unauthorized" };
+  const { data: profile } = await supabase.from("staff_profiles").select("role").eq("id", user.id).single();
+  if (!profile || profile.role === "waiter") return { success: false, error: "Unauthorized" };
+  if (
+    !input.name.trim() || input.name.length > 200 ||
+    (input.address?.length ?? 0) > 500 || (input.phone?.length ?? 0) > 50 ||
+    [input.vatPercentage, input.tipPercentage].some((value) => value !== undefined && (!Number.isFinite(value) || value < 0 || value > 100)) ||
+    input.loyaltyPointsPerRand !== undefined && (!Number.isFinite(input.loyaltyPointsPerRand) || input.loyaltyPointsPerRand < 0 || input.loyaltyPointsPerRand > 1000) ||
+    input.loyaltyRewardThreshold !== undefined && (!Number.isInteger(input.loyaltyRewardThreshold) || input.loyaltyRewardThreshold < 1 || input.loyaltyRewardThreshold > 1000000) ||
+    input.loyaltyRewardValue !== undefined && (!Number.isFinite(input.loyaltyRewardValue) || input.loyaltyRewardValue < 0 || input.loyaltyRewardValue > 1000000)
+  ) return { success: false, error: "Invalid venue settings" };
   const existing = await getVenueSettings();
 
   const payload = {
@@ -112,6 +127,19 @@ export async function inviteStaff(input: {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Unauthorized" };
+  const { data: profile } = await supabase.from("staff_profiles").select("role").eq("id", user.id).single();
+  if (!profile || profile.role === "waiter" || input.role === "admin" || (profile.role === "manager" && input.role !== "waiter")) {
+    return { success: false, error: "Unauthorized" };
+  }
+  if (!/^\S+@\S+\.\S+$/.test(input.email) || input.email.length > 320 || !input.fullName.trim() || input.fullName.length > 200 || (input.phone?.length ?? 0) > 50) {
+    return { success: false, error: "Invalid staff invite" };
+  }
+  try {
+    await enforceRateLimit({ scope: "staff-invite", identifier: user.id, limit: 50, windowSeconds: 24 * 60 * 60 });
+  } catch (error) {
+    return { success: false, error: error instanceof RateLimitError ? error.message : "Invites are temporarily unavailable" };
+  }
 
   const { error } = await supabase.from("staff_invites").insert({
     email: input.email.trim().toLowerCase(),

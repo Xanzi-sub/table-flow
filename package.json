@@ -10,7 +10,7 @@
     "lint": "eslint",
     "supabase:login": "supabase login",
     "supabase:link": "supabase link",
-    "supabase:deploy": "supabase functions deploy extract-menu-items && supabase functions deploy send-marketing-campaign && supabase functions deploy send-order-receipt && supabase functions deploy send-otp-whatsapp --no-verify-jwt && supabase functions deploy send-staff-push",
+    "supabase:deploy": "supabase functions deploy extract-menu-items && supabase functions deploy send-marketing-campaign && supabase functions deploy send-order-receipt && supabase functions deploy send-otp-whatsapp --no-verify-jwt && supabase functions deploy send-staff-push && supabase functions deploy send-customer-push",
     "supabase:logs": "supabase functions logs extract-menu-items",
     "cap:sync": "cap sync",
     "cap:android": "cap open android",

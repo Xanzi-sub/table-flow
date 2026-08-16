@@ -39,6 +39,11 @@ export async function PATCH(request: Request) {
       }).catch(() => {});
     });
   }
+  after(async () => {
+    await supabase.functions.invoke("send-customer-push", {
+      body: { orderId: body.orderId },
+    }).catch(() => {});
+  });
 
   return NextResponse.json({ success: true });
 }

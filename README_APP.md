@@ -213,9 +213,16 @@ public landing page uses the TableFlow green brand direction and larger logo.
 - **Install experience:** authenticated Chrome staff receive a native browser
   install prompt when eligible; standalone installs are detected and not
   prompted again. Safari receives Add to Home Screen guidance.
+- **Customer install and alerts:** each QR menu exposes a table-specific PWA
+  manifest. Anonymous customers can install it and register their browser for
+  persistent order-status notifications, background Web Push and foreground
+  sound when an order becomes preparing, served, completed or cancelled.
+- **Floor request source:** active `table_service_requests` rows—not the lossy
+  table status alone—drive waiter-call and bill-request badges, panels and
+  drawer details. Realtime plus polling keeps them visible until resolved.
 - **Checkout resilience:** every cart submission has a stable idempotency key,
   so an interrupted response can be retried without creating a duplicate order.
-- **Database:** migrations currently run through `0032_device_registration_rpc.sql`.
+- **Database:** migrations currently run through `0033_customer_notifications.sql`.
 
 See [README.md](README.md) for installation, environment variables, migrations,
 Edge Function deployment, routes and external support API examples.

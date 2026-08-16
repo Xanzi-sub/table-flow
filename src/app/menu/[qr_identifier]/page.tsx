@@ -2,6 +2,12 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicMenuRecommendations } from "@/app/actions/intelligence";
 import { CustomerMenuApp } from "@/components/customer/CustomerMenuApp";
+import type { Metadata } from "next";
+
+export async function generateMetadata({ params }: { params: Promise<{ qr_identifier: string }> }): Promise<Metadata> {
+  const { qr_identifier } = await params;
+  return { manifest: `/menu/${qr_identifier}/manifest.webmanifest` };
+}
 
 export default async function CustomerMenuPage({
   params,

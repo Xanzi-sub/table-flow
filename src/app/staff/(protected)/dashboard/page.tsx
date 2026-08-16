@@ -7,13 +7,14 @@ export default async function StaffDashboardPage() {
   const profile = await requireStaffProfile();
   const supabase = await createClient();
 
-  const [{ data: tables }, { data: orders }, { data: waiters }] = await Promise.all([
+  const [{ data: tables }, { data: orders }, { data: waiters }, { data: serviceRequests }] = await Promise.all([
     supabase.from("tables").select("*").order("table_number"),
     supabase
       .from("orders")
       .select("*")
       .in("status", ["pending", "preparing", "served"]),
     supabase.from("staff_profiles").select("id, full_name, role, is_checked_in"),
+    supabase.from("table_service_requests").select("*").is("resolved_at", null).order("created_at"),
   ]);
 
   const waiterNames = Object.fromEntries(
@@ -28,6 +29,7 @@ export default async function StaffDashboardPage() {
       initialOrders={orders ?? []}
       waiterNames={waiterNames}
       waiters={waiterOptions}
+      initialServiceRequests={serviceRequests ?? []}
     />
   );
 }

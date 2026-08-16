@@ -20,6 +20,7 @@ import { CartDrawer } from "./CartDrawer";
 import { OrderStatusTracker } from "./OrderStatusTracker";
 import { OrderHistoryModal } from "./OrderHistoryModal";
 import { NamePrompt } from "./NamePrompt";
+import { CustomerAppBridge } from "./CustomerAppBridge";
 import {
   CartIcon,
   ReceiptIcon,
@@ -660,6 +661,7 @@ function MenuAppContent({
 
   return (
     <MobileContainer>
+      {identity && <CustomerAppBridge customerSessionId={identity.userId} />}
       <div className="relative flex h-full flex-col overflow-hidden bg-[#fafaf9]">
         {/* ---------------------------------------------------------------- */}
         {/* Venue header                                                     */}

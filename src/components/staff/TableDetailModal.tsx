@@ -10,6 +10,7 @@ import type {
   OrderStatus,
   StaffProfile,
   TableRow,
+  TableServiceRequest,
   UserRole,
 } from "@/types/database";
 
@@ -425,6 +426,7 @@ export function TableDetailModal({
   table,
   role,
   waiters,
+  serviceRequests,
   onServiceResolved,
   onTableClaimed,
   onClose,
@@ -435,6 +437,7 @@ export function TableDetailModal({
     StaffProfile,
     "id" | "full_name" | "is_checked_in"
   >[];
+  serviceRequests: TableServiceRequest[];
   onServiceResolved: (tableId: string) => void;
   onTableClaimed: (tableId: string) => void;
   onClose: () => void;
@@ -750,14 +753,19 @@ export function TableDetailModal({
           )}
 
           {/* Service request */}
-          {table.service_requested_at && (
+          {serviceRequests.length > 0 && (
             <div className="border-b border-[#E8DDBF] bg-[#FFFBF1] px-5 py-3.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />
 
                   <span className="text-[10px] font-semibold text-[#80651D]">
-                    Waiter requested
+                    {serviceRequests.some((request) => request.request_type === "bill_requested") &&
+                    serviceRequests.some((request) => request.request_type === "waiter_call")
+                      ? "Waiter and bill requested"
+                      : serviceRequests.some((request) => request.request_type === "bill_requested")
+                        ? "Bill requested"
+                        : "Waiter requested"}
                   </span>
                 </div>
 

@@ -16,6 +16,7 @@ let alertAudioContext: AudioContext | null = null;
 let alertSoundInterval: number | null = null;
 let alertSoundTimeout: number | null = null;
 let lastAlertedNotificationId: string | null = null;
+const ALERT_SOUND_EVENT = "tableflow-alert-sound-state";
 
 function notificationRoute(notification: StaffNotification) {
   const route = notification.metadata?.route;
@@ -50,14 +51,42 @@ export function stopAlertSound() {
   if (alertSoundTimeout !== null) window.clearTimeout(alertSoundTimeout);
   alertSoundInterval = null;
   alertSoundTimeout = null;
+  window.dispatchEvent(new CustomEvent(ALERT_SOUND_EVENT, { detail: { ringing: false } }));
 }
 
-function startContinuousAlertSound() {
+export function startContinuousAlertSound() {
   if (window.localStorage.getItem(SOUND_KEY) === "off") return;
   stopAlertSound();
+  window.dispatchEvent(new CustomEvent(ALERT_SOUND_EVENT, { detail: { ringing: true } }));
   playAlertSound();
   alertSoundInterval = window.setInterval(playAlertSound, 2_000);
   alertSoundTimeout = window.setTimeout(stopAlertSound, 60_000);
+}
+
+export function ActiveAlertSilencer() {
+  const [ringing, setRinging] = useState(false);
+
+  useEffect(() => {
+    const handleState = (event: Event) => {
+      setRinging(Boolean((event as CustomEvent<{ ringing?: boolean }>).detail?.ringing));
+    };
+    window.addEventListener(ALERT_SOUND_EVENT, handleState);
+    return () => window.removeEventListener(ALERT_SOUND_EVENT, handleState);
+  }, []);
+
+  if (!ringing) return null;
+  return (
+    <div role="alert" className="fixed inset-x-3 bottom-20 z-[90] mx-auto flex max-w-md items-center justify-between gap-4 rounded-lg border border-red-200 bg-white p-4 shadow-2xl sm:bottom-5">
+      <div className="flex items-center gap-3">
+        <span className="h-3 w-3 animate-pulse rounded-full bg-red-600" />
+        <div>
+          <p className="text-sm font-bold text-slate-900">Staff alert ringing</p>
+          <p className="mt-0.5 text-xs text-slate-500">Open the alert to handle it, or silence the sound now.</p>
+        </div>
+      </div>
+      <button type="button" onClick={stopAlertSound} className="btn btn-danger shrink-0">Stop sound</button>
+    </div>
+  );
 }
 
 function unlockAlertSound() {

@@ -1,6 +1,6 @@
 "use client";
 
-import type { TableRow } from "@/types/database";
+import type { TableRow, TableServiceRequest } from "@/types/database";
 import { useState } from "react";
 import { formatStaffName } from "@/lib/utils";
 
@@ -28,20 +28,23 @@ const STATUS_TEXT: Record<TableRow["status"], string> = {
 export function TableCard({
   table,
   hasNewOrder,
+  serviceRequests,
   waiterName,
   onServiceResolved,
   onOpenDetail,
 }: {
   table: TableRow;
   hasNewOrder: boolean;
+  serviceRequests: TableServiceRequest[];
   waiterName?: string;
   onServiceResolved: (tableId: string) => void;
   onOpenDetail: () => void;
 }) {
   const [loading, setLoading] = useState(false);
 
-  const needsAttention =
-    hasNewOrder || table.status === "awaiting_bill" || Boolean(table.service_requested_at);
+  const hasBillRequest = serviceRequests.some((request) => request.request_type === "bill_requested");
+  const hasWaiterCall = serviceRequests.some((request) => request.request_type === "waiter_call");
+  const needsAttention = hasNewOrder || hasBillRequest || hasWaiterCall;
 
   async function handleResolveRequest() {
     setLoading(true);
@@ -121,7 +124,7 @@ export function TableCard({
             </div>
           )}
 
-          {table.status === "awaiting_bill" && (
+          {hasBillRequest && (
             <div className="flex min-h-8 items-center justify-between gap-3 py-2">
               <span className="flex min-w-0 items-center gap-2 font-medium text-[#A57613]">
                 <span className="h-2 w-2 shrink-0 rounded-full bg-[#D99A20]" />
@@ -131,7 +134,7 @@ export function TableCard({
             </div>
           )}
 
-          {table.service_requested_at && (
+          {hasWaiterCall && (
             <div
               className="flex min-h-8 items-center justify-between gap-3 py-2"
               onClick={(event) => event.stopPropagation()}

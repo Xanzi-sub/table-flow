@@ -28,7 +28,7 @@ import { signOutStaff } from "@/app/actions/auth";
 import { toggleCheckIn } from "@/app/actions/tables";
 import { formatStaffName } from "@/lib/utils";
 import type { UserRole } from "@/types/database";
-import { NativePushBridge, StaffNotificationCentre } from "@/components/staff/StaffNotifications";
+import { ActiveAlertSilencer, NativePushBridge, StaffNotificationCentre } from "@/components/staff/StaffNotifications";
 import { StaffWebAppBridge } from "@/components/staff/StaffWebAppBridge";
 
 interface NavItem {
@@ -277,6 +277,7 @@ export function StaffShell({
     <div className="flex min-h-dvh flex-col bg-slate-50 text-slate-900 xl:flex-row">
       <NativePushBridge />
       <StaffWebAppBridge />
+      <ActiveAlertSilencer />
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 flex-col border-r border-slate-200 bg-white xl:flex">
         <div className="flex h-[72px] items-center border-b border-slate-200 px-5">
           <VenueIdentity venueName={venueName} venueLogoUrl={venueLogoUrl} />

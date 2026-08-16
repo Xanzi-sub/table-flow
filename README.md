@@ -61,14 +61,15 @@ supabase link --project-ref <your-project-ref>
 supabase db push
 ```
 
-This applies all migrations through `0032_device_registration_rpc.sql`. The migration
+This applies all migrations through `0033_customer_notifications.sql`. The migration
 history covers the core schema and storage, onboarding and staff invites,
 category groups, Zernio account data, waiter scoping and assignment, tips and
 service requests, loyalty and feedback, menu specials and quantity deals,
 order-scoped payments, loyalty redemption, support tickets, persistent rate
 limiting, financial constraints, service-request ownership, storage security,
 native/web staff devices, persistent notifications, manager alert fan-out,
-waiter self-claim, safe historical assignment repair and duplicate-safe retries.
+waiter self-claim, safe historical assignment repair, customer order-status
+notifications and duplicate-safe retries.
 
 Do not skip older migrations on a fresh project. Supabase records which files
 have already been applied and only runs the missing migrations.
@@ -172,7 +173,7 @@ src/
   app/admin/                 # venue operations, CRM, menu, intelligence, staff and settings
   components/                # customer/staff/admin/onboarding UI split by surface
 supabase/
-  migrations/                # schema, RLS, triggers and RPCs through migration 0032
+  migrations/                # schema, RLS, triggers and RPCs through migration 0033
   functions/                 # AI extraction, WhatsApp campaigns, receipts and OTP
 ```
 
@@ -256,6 +257,12 @@ Studio normally installs both; set `JAVA_HOME` and `ANDROID_HOME`, or add an
 `android/local.properties` file containing `sdk.dir=C:\\path\\to\\Android\\Sdk`.
 On iPhone/iPad it shows Safari's Share > Add to Home Screen instructions.
 Dismissed prompts remain hidden for seven days.
+
+Customer table menus use a table-specific manifest and show their own install
+and notification prompts after the anonymous ordering session is established.
+Customers can install that menu shortcut and receive preparing, served,
+completed and cancelled order-status alerts. Foreground updates use the same
+60-second alarm with an immediate Stop sound control.
 
 With the Firebase public variables above and the FCM server credentials set,
 Chrome desktop/Android registers a browser device and receives background Web

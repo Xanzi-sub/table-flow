@@ -61,6 +61,29 @@ export interface TableServiceRequest {
   created_at: string;
 }
 
+export interface CustomerDevice {
+  id: string;
+  customer_session_id: string;
+  platform: "web";
+  push_token: string;
+  device_identifier: string;
+  is_active: boolean;
+  last_seen_at: string;
+  created_at: string;
+}
+
+export interface CustomerNotification {
+  id: string;
+  customer_session_id: string;
+  order_id: string;
+  status: OrderStatus;
+  title: string;
+  body: string;
+  route: string;
+  read_at: string | null;
+  created_at: string;
+}
+
 export interface StaffProfile {
   id: string;
   full_name: string;
@@ -340,6 +363,8 @@ export interface Database {
       staff_devices: { Row: StaffDevice; Insert: Partial<StaffDevice> & { staff_id: string; platform: StaffDevice["platform"]; push_token: string; device_identifier: string }; Update: Partial<StaffDevice>; Relationships: [] };
       staff_notifications: { Row: StaffNotification; Insert: Partial<StaffNotification> & { recipient_staff_id: string; type: StaffNotificationType; title: string; body: string; event_key: string }; Update: Partial<StaffNotification>; Relationships: [] };
       table_service_requests: { Row: TableServiceRequest; Insert: Partial<TableServiceRequest> & { table_id: string; order_id: string; customer_session_id: string; request_type: TableServiceRequest["request_type"] }; Update: Partial<TableServiceRequest>; Relationships: [] };
+      customer_devices: { Row: CustomerDevice; Insert: Partial<CustomerDevice> & { customer_session_id: string; push_token: string; device_identifier: string }; Update: Partial<CustomerDevice>; Relationships: [] };
+      customer_notifications: { Row: CustomerNotification; Insert: Partial<CustomerNotification> & { customer_session_id: string; order_id: string; status: OrderStatus; title: string; body: string; route: string }; Update: Partial<CustomerNotification>; Relationships: [] };
       tip_cashout_requests: { Row: TipCashoutRequest; Insert: Partial<TipCashoutRequest> & { waiter_id: string; amount: number }; Update: Partial<TipCashoutRequest>; Relationships: [] };
       venue_settings: { Row: VenueSettings; Insert: Partial<VenueSettings> & { name: string }; Update: Partial<VenueSettings>; Relationships: [] };
       staff_invites: { Row: StaffInvite; Insert: Partial<StaffInvite> & { email: string; full_name: string }; Update: Partial<StaffInvite>; Relationships: [] };
@@ -374,6 +399,10 @@ export interface Database {
           p_app_version?: string | null;
         };
         Returns: StaffDevice;
+      };
+      register_customer_device: {
+        Args: { p_push_token: string; p_device_identifier: string };
+        Returns: CustomerDevice;
       };
       get_table_waiter_name: { Args: { p_table_id: string }; Returns: string | null };
       mark_order_paid_with_loyalty: {

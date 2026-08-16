@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { Order, StaffProfile, TableRow } from "@/types/database";
+import type { Order, StaffProfile, TableRow, TableServiceRequest } from "@/types/database";
 import { TableCard } from "./TableCard";
 import { TableDetailModal } from "./TableDetailModal";
 import { formatStaffName } from "@/lib/utils";
@@ -17,6 +17,7 @@ interface StaffDashboardProps {
     StaffProfile,
     "id" | "full_name" | "is_checked_in"
   >[];
+  initialServiceRequests: TableServiceRequest[];
 }
 
 type FloorFilter = "all" | "vacant" | "dining" | "awaiting_bill" | "paid";
@@ -35,30 +36,39 @@ export function StaffDashboard({
   initialOrders,
   waiterNames,
   waiters,
+  initialServiceRequests,
 }: StaffDashboardProps) {
   const [tables, setTables] = useState(initialTables);
   const [orders, setOrders] = useState(initialOrders);
   const [selectedTable, setSelectedTable] = useState<TableRow | null>(null);
   const [filter, setFilter] = useState<FloorFilter>("all");
+  const [serviceRequests, setServiceRequests] = useState(initialServiceRequests);
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     const tableId = searchParams.get("tableId");
     if (!tableId) return;
     const table = tables.find((item) => item.id === tableId);
-    if (table) setSelectedTable(table);
-  }, [searchParams, tables]);
+    if (table) {
+      setSelectedTable(table);
+      router.replace(pathname, { scroll: false });
+    }
+  }, [pathname, router, searchParams, tables]);
 
   useEffect(() => {
     const supabase = createClient();
 
     async function syncFloor() {
-      const [{ data: latestTables }, { data: latestOrders }] = await Promise.all([
+      const [{ data: latestTables }, { data: latestOrders }, { data: latestRequests }] = await Promise.all([
         supabase.from("tables").select("*").order("table_number"),
         supabase.from("orders").select("*").in("status", ["pending", "preparing", "served"]),
+        supabase.from("table_service_requests").select("*").is("resolved_at", null).order("created_at"),
       ]);
       if (latestTables) setTables(latestTables);
       if (latestOrders) setOrders(latestOrders);
+      if (latestRequests) setServiceRequests(latestRequests);
     }
 
     const channel = supabase
@@ -97,6 +107,12 @@ export function StaffDashboard({
             );
           });
         }
+      )
+
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "table_service_requests" },
+        () => void syncFloor()
       )
 
       .on(
@@ -160,7 +176,16 @@ export function StaffDashboard({
     [orders]
   );
 
+  const serviceRequestsByTable = useMemo(() => {
+    const grouped = new Map<string, TableServiceRequest[]>();
+    for (const request of serviceRequests) {
+      grouped.set(request.table_id, [...(grouped.get(request.table_id) ?? []), request]);
+    }
+    return grouped;
+  }, [serviceRequests]);
+
   function handleServiceResolved(tableId: string) {
+    setServiceRequests((current) => current.filter((request) => request.table_id !== tableId));
     setTables((current) =>
       current.map((table) =>
         table.id === tableId ? { ...table, service_requested_at: null, status: "dining" } : table
@@ -223,7 +248,7 @@ export function StaffDashboard({
   }, [allVisibleTables]);
 
   const attentionCount =
-    newOrderTableIds.size + statusCounts.awaiting_bill;
+    newOrderTableIds.size + new Set(serviceRequests.map((request) => request.table_id)).size;
 
   const selectedTableLive = selectedTable
     ? tables.find((table) => table.id === selectedTable.id) ??
@@ -384,6 +409,7 @@ export function StaffDashboard({
                 key={table.id}
                 table={table}
                 hasNewOrder={newOrderTableIds.has(table.id)}
+                serviceRequests={serviceRequestsByTable.get(table.id) ?? []}
                 waiterName={
                   table.current_waiter_id
                     ? waiterNames[table.current_waiter_id]
@@ -448,13 +474,13 @@ export function StaffDashboard({
 
           <OperationalPanel
             title="Service attention"
-            count={statusCounts.awaiting_bill}
+            count={serviceRequestsByTable.size}
           >
-            {statusCounts.awaiting_bill === 0 ? (
+            {serviceRequestsByTable.size === 0 ? (
               <EmptyState text="No tables waiting for service." />
             ) : (
               allVisibleTables
-                .filter((table) => table.status === "awaiting_bill")
+                .filter((table) => serviceRequestsByTable.has(table.id))
                 .slice(0, 5)
                 .map((table) => (
                   <button
@@ -468,7 +494,9 @@ export function StaffDashboard({
                       </span>
 
                       <span className="text-[10px] text-[#737983]">
-                        Bill requested
+                        {(serviceRequestsByTable.get(table.id) ?? []).some((request) => request.request_type === "bill_requested")
+                          ? "Bill requested"
+                          : "Waiter requested"}
                       </span>
                     </div>
 
@@ -488,6 +516,7 @@ export function StaffDashboard({
           table={selectedTableLive}
           role={profile.role}
           waiters={waiters}
+          serviceRequests={serviceRequestsByTable.get(selectedTableLive.id) ?? []}
           onServiceResolved={handleServiceResolved}
           onTableClaimed={handleTableClaimed}
           onClose={() => setSelectedTable(null)}

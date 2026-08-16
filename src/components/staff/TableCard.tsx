@@ -65,7 +65,7 @@ export function TableCard({
           onOpenDetail();
         }
       }}
-      className={`group relative min-h-[178px] cursor-pointer bg-white p-4 transition-colors hover:bg-[#FAFBFC] ${
+      className={`group flex min-h-[220px] cursor-pointer flex-col bg-white p-4 transition-colors hover:bg-[#FAFBFC] ${
         needsAttention ? "bg-[#FFFDF7]" : ""
       }`}
     >
@@ -105,57 +105,49 @@ export function TableCard({
         )}
       </div>
 
-      {/* Attention state */}
-      {hasNewOrder && (
-        <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between border-t border-[#E9EBEE] pt-3">
-          <span className="flex items-center gap-2 text-[9px] font-medium text-[#2556C8]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#2563EB]" />
-            New order
-          </span>
+      {/* Activity states stay in normal flow so combined alerts never overlap. */}
+      {needsAttention && (
+        <div className="mt-auto flex flex-col divide-y divide-[#E9EBEE] border-t border-[#E9EBEE] pt-2">
+          {hasNewOrder && (
+            <div className="flex min-h-8 items-center justify-between gap-3 py-2">
+              <span className="flex min-w-0 items-center gap-2 font-medium text-[#2556C8]">
+                <span className="h-2 w-2 shrink-0 rounded-full bg-[#2563EB]" />
+                <span className="truncate">New order</span>
+              </span>
+              <span className="shrink-0 font-mono text-[#999FA8]">OPEN</span>
+            </div>
+          )}
 
-          <span className="font-mono text-[8px] text-[#999FA8]">
-            OPEN
-          </span>
+          {table.status === "awaiting_bill" && (
+            <div className="flex min-h-8 items-center justify-between gap-3 py-2">
+              <span className="flex min-w-0 items-center gap-2 font-medium text-[#A57613]">
+                <span className="h-2 w-2 shrink-0 rounded-full bg-[#D99A20]" />
+                <span className="truncate">Bill requested</span>
+              </span>
+              <span className="shrink-0 font-mono text-[#999FA8]">ACTION</span>
+            </div>
+          )}
+
+          {table.service_requested_at && (
+            <div
+              className="flex min-h-8 items-center justify-between gap-3 py-2"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <span className="flex min-w-0 items-center gap-2 font-medium text-[#B4271A]">
+                <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-[#DC2626]" />
+                <span className="truncate">Waiter requested</span>
+              </span>
+              <button
+                onClick={handleResolveRequest}
+                disabled={loading}
+                className="shrink-0 rounded border border-[#D9DDE2] bg-white px-2.5 py-1 font-mono font-semibold text-[#2556C8] hover:bg-[#F4F5F7] disabled:opacity-50"
+              >
+                {loading ? "…" : "RESOLVE"}
+              </button>
+            </div>
+          )}
         </div>
       )}
-
-      {table.status === "awaiting_bill" && (
-        <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between border-t border-[#E9EBEE] pt-3">
-          <span className="flex items-center gap-2 text-[9px] font-medium text-[#A57613]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#D99A20]" />
-            Bill requested
-          </span>
-
-          <span className="font-mono text-[8px] text-[#999FA8]">
-            ACTION
-          </span>
-        </div>
-      )}
-
-      {table.service_requested_at && (
-        <div
-          className="absolute bottom-4 left-4 right-4 flex items-center justify-between border-t border-[#E9EBEE] pt-3"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <span className="flex items-center gap-2 text-[9px] font-medium text-[#B4271A]">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#DC2626]" />
-            Waiter requested
-          </span>
-
-          <button
-            onClick={handleResolveRequest}
-            disabled={loading}
-            className="font-mono text-[8px] font-semibold text-[#2556C8] hover:underline"
-          >
-            RESOLVE
-          </button>
-        </div>
-      )}
-
-      {/* Hover affordance */}
-      <div className="pointer-events-none absolute right-3 top-3 opacity-0 transition-opacity group-hover:opacity-100">
-        <span className="text-[12px] text-[#A0A5AD]">↗</span>
-      </div>
 
     </div>
   );

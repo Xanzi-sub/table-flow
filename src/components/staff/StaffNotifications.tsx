@@ -13,6 +13,9 @@ import type { StaffNotification } from "@/types/database";
 
 const SOUND_KEY = "tableflow-alert-sound";
 let alertAudioContext: AudioContext | null = null;
+let alertSoundInterval: number | null = null;
+let alertSoundTimeout: number | null = null;
+let lastAlertedNotificationId: string | null = null;
 
 function notificationRoute(notification: StaffNotification) {
   const route = notification.metadata?.route;
@@ -42,13 +45,28 @@ export function playAlertSound() {
   else ring();
 }
 
+export function stopAlertSound() {
+  if (alertSoundInterval !== null) window.clearInterval(alertSoundInterval);
+  if (alertSoundTimeout !== null) window.clearTimeout(alertSoundTimeout);
+  alertSoundInterval = null;
+  alertSoundTimeout = null;
+}
+
+function startContinuousAlertSound() {
+  if (window.localStorage.getItem(SOUND_KEY) === "off") return;
+  stopAlertSound();
+  playAlertSound();
+  alertSoundInterval = window.setInterval(playAlertSound, 2_000);
+  alertSoundTimeout = window.setTimeout(stopAlertSound, 60_000);
+}
+
 function unlockAlertSound() {
   if (window.localStorage.getItem(SOUND_KEY) === "off" || !window.AudioContext) return;
   alertAudioContext ??= new window.AudioContext();
   if (alertAudioContext.state === "suspended") void alertAudioContext.resume();
 }
 
-export function NativePushBridge({ staffId, venueId }: { staffId: string; venueId?: string | null }) {
+export function NativePushBridge() {
   const [showPermission, setShowPermission] = useState(false);
   const [registering, setRegistering] = useState(false);
 
@@ -95,26 +113,19 @@ export function NativePushBridge({ staffId, venueId }: { staffId: string; venueI
           const platform = Capacitor.getPlatform();
           if (platform !== "android" && platform !== "ios") return;
           const supabase = createClient();
-          await supabase.from("staff_devices").upsert(
-            {
-              staff_id: staffId,
-              venue_id: venueId ?? null,
-              platform,
-              push_token: value,
-              device_identifier: identifier,
-              app_version: app.version,
-              is_active: true,
-              last_seen_at: new Date().toISOString(),
-            },
-            { onConflict: "staff_id,device_identifier" }
-          );
+          await supabase.rpc("register_staff_device", {
+            p_platform: platform,
+            p_push_token: value,
+            p_device_identifier: identifier,
+            p_app_version: app.version,
+          });
         })
       );
       listeners.push(
         await PushNotifications.addListener("registrationError", () => setShowPermission(true))
       );
       listeners.push(
-        await PushNotifications.addListener("pushNotificationReceived", () => playAlertSound())
+        await PushNotifications.addListener("pushNotificationReceived", () => startContinuousAlertSound())
       );
       listeners.push(
         await PushNotifications.addListener("pushNotificationActionPerformed", ({ notification }) => {
@@ -142,7 +153,7 @@ export function NativePushBridge({ staffId, venueId }: { staffId: string; venueI
       disposed = true;
       listeners.forEach((listener) => void listener.remove());
     };
-  }, [staffId, venueId]);
+  }, []);
 
   if (!showPermission) return null;
   return (
@@ -177,8 +188,29 @@ export function StaffNotificationCentre({
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const initialized = useRef(false);
+  const latestNotificationId = useRef<string | null>(null);
 
-  const load = useCallback(async () => {
+  const announce = useCallback((notification: StaffNotification) => {
+    if (lastAlertedNotificationId === notification.id) return;
+    lastAlertedNotificationId = notification.id;
+    startContinuousAlertSound();
+    if (!Capacitor.isNativePlatform() && "Notification" in window && Notification.permission === "granted" && document.visibilityState === "visible") {
+      const systemNotification = new Notification(notification.title, {
+        body: notification.body,
+        icon: "/icons/icon-192.webp",
+        tag: notification.id,
+        silent: false,
+      });
+      systemNotification.onclick = () => {
+        stopAlertSound();
+        window.focus();
+        router.push(notificationRoute(notification));
+        systemNotification.close();
+      };
+    }
+  }, [router]);
+
+  const load = useCallback(async (announceNew = false) => {
     const supabase = createClient();
     const { data, error } = await supabase
       .from("staff_notifications")
@@ -187,8 +219,14 @@ export function StaffNotificationCentre({
       .order("created_at", { ascending: false })
       .limit(100);
     setLoadError(Boolean(error));
-    setNotifications(data ?? []);
-  }, [staffId]);
+    const next = data ?? [];
+    const newest = next[0];
+    if (announceNew && newest && !newest.read_at && latestNotificationId.current && newest.id !== latestNotificationId.current) {
+      announce(newest);
+    }
+    latestNotificationId.current = newest?.id ?? null;
+    setNotifications(next);
+  }, [announce, staffId]);
 
   useEffect(() => {
     setSoundEnabled(window.localStorage.getItem(SOUND_KEY) !== "off");
@@ -204,22 +242,10 @@ export function StaffNotificationCentre({
         { event: "INSERT", schema: "public", table: "staff_notifications", filter: `recipient_staff_id=eq.${staffId}` },
         (payload) => {
           const incoming = payload.new as StaffNotification;
+          latestNotificationId.current = incoming.id;
           setNotifications((current) => [incoming, ...current.filter((item) => item.id !== incoming.id)]);
           if (initialized.current) {
-            playAlertSound();
-            if (!Capacitor.isNativePlatform() && "Notification" in window && Notification.permission === "granted" && document.visibilityState === "visible") {
-              const systemNotification = new Notification(incoming.title, {
-                body: incoming.body,
-                icon: "/icons/icon-192.webp",
-                tag: incoming.id,
-                silent: false,
-              });
-              systemNotification.onclick = () => {
-                window.focus();
-                router.push(notificationRoute(incoming));
-                systemNotification.close();
-              };
-            }
+            announce(incoming);
           }
         }
       )
@@ -229,14 +255,22 @@ export function StaffNotificationCentre({
         () => void load()
       )
       .subscribe();
+    const fallback = window.setInterval(() => void load(true), 5_000);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") void load(true);
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
     return () => {
+      window.clearInterval(fallback);
+      document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("pointerdown", unlock);
       window.removeEventListener("keydown", unlock);
       void supabase.removeChannel(channel);
     };
-  }, [instanceId, load, router, staffId]);
+  }, [announce, instanceId, load, staffId]);
 
   async function markRead(notification: StaffNotification) {
+    stopAlertSound();
     if (!notification.read_at) {
       await createClient().from("staff_notifications").update({ read_at: new Date().toISOString() }).eq("id", notification.id);
       setNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, read_at: new Date().toISOString() } : item));
@@ -246,6 +280,7 @@ export function StaffNotificationCentre({
   }
 
   async function markAllRead() {
+    stopAlertSound();
     await createClient().from("staff_notifications").update({ read_at: new Date().toISOString() }).eq("recipient_staff_id", staffId).is("read_at", null);
     setNotifications((current) => current.map((item) => ({ ...item, read_at: item.read_at ?? new Date().toISOString() })));
   }
@@ -255,6 +290,7 @@ export function StaffNotificationCentre({
     setSoundEnabled(next);
     window.localStorage.setItem(SOUND_KEY, next ? "on" : "off");
     if (next) playAlertSound();
+    else stopAlertSound();
   }
 
   const unread = notifications.filter((item) => !item.read_at).length;
@@ -297,7 +333,11 @@ function NotificationList({ notifications, unread, soundEnabled, onRead, onMarkA
     <>
       <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
         <div className="flex items-center gap-2"><BellRing className="h-4 w-4 text-[var(--accent-500)]" /><p className="text-sm font-bold">Notifications</p>{unread > 0 && <span className="badge badge-accent">{unread} unread</span>}</div>
-        <div className="flex gap-2"><button onClick={onToggleSound} className="text-[11px] font-semibold text-slate-500">Sound {soundEnabled ? "on" : "off"}</button>{unread > 0 && <button onClick={onMarkAll} title="Mark all read" className="text-[var(--accent-700)]"><CheckCheck className="h-4 w-4" /></button>}</div>
+        <div className="flex items-center gap-2">
+          <button onClick={startContinuousAlertSound} className="text-[11px] font-semibold text-[var(--accent-700)]">Test 60s alert</button>
+          <button onClick={onToggleSound} className="text-[11px] font-semibold text-slate-500">Sound {soundEnabled ? "on" : "off"}</button>
+          {unread > 0 && <button onClick={onMarkAll} title="Mark all read" className="text-[var(--accent-700)]"><CheckCheck className="h-4 w-4" /></button>}
+        </div>
       </div>
       <div className="divide-y divide-slate-100">
         {notifications.map((notification) => (

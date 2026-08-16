@@ -233,7 +233,6 @@ export function StaffShell({
   isCheckedIn,
   venueName,
   venueLogoUrl,
-  venueId,
   children,
 }: {
   role: UserRole;
@@ -242,7 +241,6 @@ export function StaffShell({
   isCheckedIn: boolean;
   venueName?: string | null;
   venueLogoUrl?: string | null;
-  venueId?: string | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -277,8 +275,8 @@ export function StaffShell({
 
   return (
     <div className="flex min-h-dvh flex-col bg-slate-50 text-slate-900 xl:flex-row">
-      <NativePushBridge staffId={staffId} venueId={venueId} />
-      <StaffWebAppBridge staffId={staffId} venueId={venueId} />
+      <NativePushBridge />
+      <StaffWebAppBridge />
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 flex-col border-r border-slate-200 bg-white xl:flex">
         <div className="flex h-[72px] items-center border-b border-slate-200 px-5">
           <VenueIdentity venueName={venueName} venueLogoUrl={venueLogoUrl} />

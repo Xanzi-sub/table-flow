@@ -24,6 +24,13 @@ export function formatDateTime(value: string | Date) {
 
 export function formatStaffName(value: string | null | undefined, fallback = "Staff member") {
   const name = value?.trim();
-  if (!name || name.includes("@")) return fallback;
+  if (!name) return fallback;
+  if (name.includes("@")) {
+    const localPart = name.split("@")[0]
+      .replace(/[._-]+/g, " ")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase())
+      .trim();
+    return localPart || fallback;
+  }
   return name;
 }

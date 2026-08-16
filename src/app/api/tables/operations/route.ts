@@ -11,7 +11,7 @@ export async function PATCH(request: Request) {
   const { data: profile } = await supabase.from("staff_profiles").select("role").eq("id", user.id).single();
   if (!profile) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  let body: { action?: "reassign" | "resolve_service"; tableId?: string; waiterId?: string | null };
+  let body: { action?: "reassign" | "resolve_service" | "claim"; tableId?: string; waiterId?: string | null };
   try {
     body = await readJsonBody(request, 4_096);
     await enforceRateLimit({ scope: "table-operation", identifier: user.id, limit: 300, windowSeconds: 60 * 60 });
@@ -24,6 +24,14 @@ export async function PATCH(request: Request) {
   if (body.action === "resolve_service") {
     const { error } = await supabase.rpc("resolve_table_service_requests", { p_table_id: body.tableId });
     return error ? NextResponse.json({ error: error.message }, { status: 400 }) : NextResponse.json({ success: true });
+  }
+
+  if (body.action === "claim") {
+    if (profile.role !== "waiter") return NextResponse.json({ error: "Only waiters can claim tables" }, { status: 403 });
+    const { data: table, error } = await supabase.rpc("claim_table_assignment", { p_table_id: body.tableId });
+    return error
+      ? NextResponse.json({ error: error.message }, { status: 400 })
+      : NextResponse.json({ success: true, table });
   }
 
   if (body.action === "reassign") {

@@ -203,12 +203,19 @@ public landing page uses the TableFlow green brand direction and larger logo.
 - **Operational recipients:** the assigned waiter receives the primary alert;
   managers/admins receive persistent copies of new-order, waiter-call, bill and
   cancellation alerts for venue-wide oversight.
+- **Foreground alarms:** new persistent alerts trigger a repeating TableFlow
+  tone for up to 60 seconds. Realtime is primary and five-second polling covers
+  sleeping or disconnected WebSockets. Opening/reading the alert, marking all
+  read or disabling sound stops the alarm.
+- **Assignment recovery:** on-duty waiters receive unassigned-work alerts and
+  can confirm **Take table & orders**. The atomic claim updates the table and
+  every active order, then Realtime reflects ownership to management.
 - **Install experience:** authenticated Chrome staff receive a native browser
   install prompt when eligible; standalone installs are detected and not
   prompted again. Safari receives Add to Home Screen guidance.
 - **Checkout resilience:** every cart submission has a stable idempotency key,
   so an interrupted response can be retried without creating a duplicate order.
-- **Database:** migrations currently run through `0030_manager_notification_fanout.sql`.
+- **Database:** migrations currently run through `0032_device_registration_rpc.sql`.
 
 See [README.md](README.md) for installation, environment variables, migrations,
 Edge Function deployment, routes and external support API examples.

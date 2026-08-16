@@ -27,7 +27,7 @@ function browserDeviceId() {
   return created;
 }
 
-export function StaffWebAppBridge({ staffId, venueId }: { staffId: string; venueId?: string | null }) {
+export function StaffWebAppBridge() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstall, setShowInstall] = useState(false);
   const [showIosHelp, setShowIosHelp] = useState(false);
@@ -71,19 +71,12 @@ export function StaffWebAppBridge({ staffId, venueId }: { staffId: string; venue
       });
       if (!token) return;
       const supabase = createClient();
-      const { error } = await supabase.from("staff_devices").upsert(
-        {
-          staff_id: staffId,
-          venue_id: venueId ?? null,
-          platform: "web",
-          push_token: token,
-          device_identifier: browserDeviceId(),
-          app_version: "web",
-          is_active: true,
-          last_seen_at: new Date().toISOString(),
-        },
-        { onConflict: "staff_id,device_identifier" }
-      );
+      const { error } = await supabase.rpc("register_staff_device", {
+        p_platform: "web",
+        p_push_token: token,
+        p_device_identifier: browserDeviceId(),
+        p_app_version: "web",
+      });
       if (error) throw new Error(error.message);
       setShowPushPrompt(false);
     } catch {
@@ -92,7 +85,7 @@ export function StaffWebAppBridge({ staffId, venueId }: { staffId: string; venue
     } finally {
       setWorking(false);
     }
-  }, [staffId, venueId]);
+  }, []);
 
   useEffect(() => {
     if (Capacitor.isNativePlatform() || isStandalone()) return;

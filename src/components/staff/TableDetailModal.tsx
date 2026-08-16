@@ -426,6 +426,7 @@ export function TableDetailModal({
   role,
   waiters,
   onServiceResolved,
+  onTableClaimed,
   onClose,
 }: {
   table: TableRow;
@@ -435,6 +436,7 @@ export function TableDetailModal({
     "id" | "full_name" | "is_checked_in"
   >[];
   onServiceResolved: (tableId: string) => void;
+  onTableClaimed: (tableId: string) => void;
   onClose: () => void;
 }) {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -446,6 +448,31 @@ export function TableDetailModal({
   >({});
   const [loading, setLoading] = useState(true);
   const [resolvingRequest, setResolvingRequest] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
+
+  async function handleClaimTable() {
+    if (!window.confirm(`Take responsibility for Table ${table.table_number} and its active orders?`)) return;
+    setClaiming(true);
+    setClaimError(null);
+    try {
+      const response = await fetch("/api/tables/operations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "claim", tableId: table.id }),
+      });
+      const result = (await response.json()) as { success?: boolean; error?: string };
+      if (!response.ok || !result.success) {
+        setClaimError(result.error ?? "Could not claim this table.");
+        return;
+      }
+      onTableClaimed(table.id);
+    } catch {
+      setClaimError("The assignment request was interrupted. Please try again.");
+    } finally {
+      setClaiming(false);
+    }
+  }
 
   async function handleResolveRequest() {
     setResolvingRequest(true);
@@ -594,7 +621,7 @@ export function TableDetailModal({
       cancelled = true;
       supabase.removeChannel(channel);
     };
-  }, [table.id]);
+  }, [table.id, table.current_waiter_id]);
 
   const openOrders = orders.filter(
     (order) =>
@@ -705,6 +732,21 @@ export function TableDetailModal({
               currentWaiterId={table.current_waiter_id}
               waiters={waiters}
             />
+          )}
+
+          {role === "waiter" && !table.current_waiter_id && (
+            <div className="border-b border-[var(--accent-200)] bg-[var(--accent-50)] px-5 py-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[10px] font-bold text-[var(--accent-700)]">Unassigned table</p>
+                  <p className="mt-1 text-[10px] text-[#626973]">Confirm to take this table and all active orders.</p>
+                </div>
+                <button onClick={handleClaimTable} disabled={claiming} className="btn btn-primary">
+                  {claiming ? "Assigning..." : "Take table & orders"}
+                </button>
+              </div>
+              {claimError && <p className="mt-2 text-[10px] font-semibold text-red-600">{claimError}</p>}
+            </div>
           )}
 
           {/* Service request */}

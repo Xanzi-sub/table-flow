@@ -365,6 +365,16 @@ export interface Database {
       request_table_service: { Args: { p_table_id: string }; Returns: undefined };
       request_table_assistance: { Args: { p_table_id: string; p_request_type: "waiter_call" | "bill_requested" }; Returns: string };
       resolve_table_service_requests: { Args: { p_table_id: string }; Returns: undefined };
+      claim_table_assignment: { Args: { p_table_id: string }; Returns: TableRow };
+      register_staff_device: {
+        Args: {
+          p_platform: "android" | "ios" | "web";
+          p_push_token: string;
+          p_device_identifier: string;
+          p_app_version?: string | null;
+        };
+        Returns: StaffDevice;
+      };
       get_table_waiter_name: { Args: { p_table_id: string }; Returns: string | null };
       mark_order_paid_with_loyalty: {
         Args: { p_order_id: string; p_method: PaymentMethod; p_tip_amount?: number };

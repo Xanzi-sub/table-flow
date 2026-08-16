@@ -168,6 +168,19 @@ export function StaffDashboard({
     );
   }
 
+  function handleTableClaimed(tableId: string) {
+    setTables((current) =>
+      current.map((table) =>
+        table.id === tableId ? { ...table, current_waiter_id: profile.id } : table
+      )
+    );
+    setOrders((current) =>
+      current.map((order) =>
+        order.table_id === tableId && !order.waiter_id ? { ...order, waiter_id: profile.id } : order
+      )
+    );
+  }
+
   const visibleTables = useMemo(() => {
     let result = tables;
 
@@ -476,6 +489,7 @@ export function StaffDashboard({
           role={profile.role}
           waiters={waiters}
           onServiceResolved={handleServiceResolved}
+          onTableClaimed={handleTableClaimed}
           onClose={() => setSelectedTable(null)}
         />
       )}

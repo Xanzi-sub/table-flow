@@ -1,6 +1,15 @@
-# TableFlow — QR Ordering & Loyalty Platform
+# TableFlow — Restaurant Operations & Guest Growth
 
-Next.js 15 (App Router, TypeScript, Tailwind) + Supabase (Auth, Postgres, Realtime, Storage, Edge Functions) + Zendio (WhatsApp).
+TableFlow is a single-venue restaurant SaaS platform combining QR ordering,
+live floor operations, menu and staff management, customer intelligence,
+loyalty, WhatsApp marketing, analytics, specials, tips and support workflows.
+
+**Stack:** Next.js 15 App Router, React 19, TypeScript, Tailwind CSS v4,
+Lucide icons, Supabase (Auth, Postgres, RLS, Realtime, Storage and Edge
+Functions), Gemini menu extraction and Zernio/Zendio WhatsApp.
+
+See [README_APP.md](README_APP.md) for the product behavior and role-by-role
+workflow guide.
 
 ## 1. Configure environment variables
 
@@ -44,18 +53,20 @@ supabase link --project-ref <your-project-ref>
 supabase db push
 ```
 
-This runs, in order:
-- `supabase/migrations/0001_init.sql` — core schema, RLS, RPC functions
-- `supabase/migrations/0002_storage.sql` — public `menu-photos` storage bucket
-- `supabase/migrations/0003_onboarding.sql` — `venue_settings`, `staff_invites`,
-  the first-admin bootstrap policy, and the `claim_staff_invite(...)` function
-- `supabase/migrations/0004_zendio_account.sql` — adds `zendio_account_id` /
-  `zendio_account_label` to `venue_settings` (auto-detected, not hand-typed)
+This applies all migrations through `0023_support_tickets.sql`. The migration
+history covers the core schema and storage, onboarding and staff invites,
+category groups, Zernio account data, waiter scoping and assignment, tips and
+service requests, loyalty and feedback, menu specials and quantity deals,
+order-scoped payments, loyalty redemption, and the support ticket workflow.
 
-In Supabase Auth settings, enable:
-- **Phone auth** (OTP) — every customer must verify their WhatsApp number
-  before ordering, so they can receive their receipt and unlock loyalty points.
-- If you leave **"Confirm email"** ON (the default), add
+Do not skip older migrations on a fresh project. Supabase records which files
+have already been applied and only runs the missing migrations.
+
+In Supabase Auth settings:
+- Enable **anonymous sign-ins**. Guests are silently given an anonymous
+  Supabase identity and enter only a display name; no account or phone number
+  is required to order.
+- If you leave **Confirm email** on for staff accounts, add
   `http://localhost:3000/auth/callback` (and your production URL) to
   **Auth → URL Configuration → Redirect URLs**. `/signup` and `/staff/signup`
   already send confirmation links there; [src/app/auth/callback/route.ts](src/app/auth/callback/route.ts)
@@ -68,16 +79,13 @@ In Supabase Auth settings, enable:
 supabase functions deploy extract-menu-items
 supabase functions deploy send-marketing-campaign
 supabase functions deploy send-order-receipt
+supabase functions deploy send-otp-whatsapp --no-verify-jwt
 ```
 
-`send-order-receipt` fires automatically after every order, formatting a
-receipt with your venue name/logo and sending it to the customer's WhatsApp
-number. **Meta requires an approved message template for a business's very
-first message to a customer** (the customer never messages your WhatsApp
-number directly, so this is always a "first contact"). Create a template
-(e.g. `order_receipt`) in your Zernio/Meta WhatsApp settings and set
-`ZENDIO_RECEIPT_TEMPLATE` to its name; until then the function falls back to
-a plain-text send, which only actually delivers within an existing 24h window.
+`send-order-receipt` formats a branded receipt and sends it when a customer has
+a WhatsApp number on file. Meta requires an approved template outside an open
+24-hour conversation window. Configure `ZENDIO_RECEIPT_TEMPLATE` with that
+approved template name.
 
 ## 4. Create your venue (no manual SQL needed)
 
@@ -101,13 +109,17 @@ npm install
 npm run dev
 ```
 
-- `/` — landing page
+- `/` — public product and pricing landing page
 - `/signup` — venue owner/admin self-signup (first account only)
 - `/onboarding/venue` → `/onboarding/team` → `/onboarding/staff` — first-run setup wizard
 - `/staff/signup` — invited staff activate their account (email must match the invite)
 - `/staff/login` — staff/admin sign in
 - `/staff/dashboard` — live floor view (role-aware)
-- `/admin/menu`, `/admin/menu-scan`, `/admin/analytics`, `/admin/staff` — manager/admin only
+- `/staff/orders`, `/staff/tips` — waiter order history and tips
+- `/admin/tables`, `/admin/orders`, `/admin/customers`, `/admin/tips` — venue operations
+- `/admin/menu`, `/admin/specials`, `/admin/menu-scan` — menu and offer management
+- `/staff/marketing`, `/admin/analytics`, `/admin/staff` — growth, intelligence and team management
+- `/admin/settings` — venue, billing, loyalty, WhatsApp and support tickets
 - `/menu/[qr_identifier]` — customer ordering app (create a `tables` row via
   `/staff/assign-table/[qr_identifier]` first, or insert one directly in SQL)
 - `/q/[qr_identifier]` — the URL encoded on the physical table sticker; resolved by
@@ -140,35 +152,41 @@ src/
   middleware.ts              # /q/[qr_identifier] routing + staff/admin auth guard
   types/database.ts          # hand-written Supabase types (regenerate with `supabase gen types typescript`)
   lib/supabase/              # browser/server/admin Supabase clients + middleware session helper
-  app/actions/               # server actions (tables, orders, menu, scan, marketing, staff, onboarding, auth)
+  app/actions/               # secured application mutations and aggregation queries
+  app/api/                   # stable support, cash-out and Zernio integration routes
   app/menu/[qr_identifier]/  # customer ordering app
   app/signup, app/onboarding/ # venue + first-admin signup, venue/team/staff setup wizard
   app/staff/                 # staff login, signup (invite claim), dashboard, assign-table, marketing
-  app/admin/                 # menu CRUD, menu-scan pipeline, analytics, staff management
+  app/admin/                 # venue operations, CRM, menu, intelligence, staff and settings
   components/                # customer/staff/admin/onboarding UI split by surface
 supabase/
-  migrations/                # SQL schema, RLS policies, RPC functions, storage bucket, onboarding tables
-  functions/                 # Deno Edge Functions: extract-menu-items, send-marketing-campaign, send-order-receipt
+  migrations/                # schema, RLS, triggers and RPCs through migration 0023
+  functions/                 # AI extraction, WhatsApp campaigns, receipts and OTP
 ```
 
 ## Notes on the security model
 
-- Every customer verifies their WhatsApp number via OTP (`signInWithOtp` /
-  `verifyOtp`) before ordering — this is what lets `send-order-receipt` deliver
-  a receipt and what identifies them for loyalty points on return visits.
-  `orders.customer_session_id` stores `auth.uid()` so Row Level Security can
-  verify order ownership instead of trusting a client-supplied session id.
+- Guests use Supabase anonymous auth. `orders.customer_session_id` stores
+  `auth.uid()` so Row Level Security verifies ownership instead of trusting a
+  client-supplied session ID. Phone and WhatsApp opt-in are optional customer
+  profile data, not an ordering prerequisite.
 - Order lookups from the customer app go through the `get_order_status(...)`
   Postgres function (SECURITY DEFINER) rather than a broad public `SELECT`
   policy on `orders`, so a customer can only ever read their own order.
 - `SUPABASE_SERVICE_ROLE_KEY` is only ever used from `src/lib/supabase/admin.ts`
   (marked `server-only`) and in Edge Functions, never in client code.
 
-## Important dependency pin
+## Pricing model
 
-`@supabase/supabase-js` and `@supabase/ssr` are pinned to `2.45.4` / `0.5.2`.
-Newer `supabase-js` versions ship a select-query-parser whose generics don't
-resolve correctly against hand-written `Database` types (everything silently
-types as `never`). If you regenerate types with the Supabase CLI and want to
-upgrade, re-verify with `npx tsc --noEmit` first.
+The public offer is one complete venue plan: **R899/month** plus **R2,500
+once-off setup and onboarding**, or **R8,990/year**. A limited Founding Venue
+offer is displayed as **R599/month plus R1,500 setup for 12 months**. TableFlow
+does not charge per order or take a percentage of restaurant revenue. Variable
+third-party WhatsApp usage may be billed separately.
+
+## Dependency notes
+
+`@supabase/supabase-js` and `@supabase/ssr` are pinned to `2.50.0` and `0.5.2`.
+The project uses hand-authored `Database` types, so verify any Supabase client
+upgrade with `npm run build`. The staff/admin shell uses `lucide-react`.
 

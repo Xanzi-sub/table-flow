@@ -420,6 +420,10 @@ export interface Database {
         };
         Returns: CustomerRecoveryResult;
       };
+      start_fresh_customer_device: {
+        Args: { p_device_id: string; p_recovery_secret: string };
+        Returns: CustomerRecoveryResult;
+      };
       get_table_waiter_name: { Args: { p_table_id: string }; Returns: string | null };
       mark_order_paid_with_loyalty: {
         Args: { p_order_id: string; p_method: PaymentMethod; p_tip_amount?: number };

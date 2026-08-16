@@ -32,7 +32,12 @@ const NAME_KEY = "tf_customer_name";
 const RECOVERY_SECRET_KEY = "tf_customer_recovery_secret";
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-function deviceCredentials() {
+function deviceCredentials(reset = false) {
+  if (reset) {
+    localStorage.removeItem(FINGERPRINT_KEY);
+    localStorage.removeItem(RECOVERY_SECRET_KEY);
+    localStorage.removeItem(NAME_KEY);
+  }
   const legacyId = localStorage.getItem(FINGERPRINT_KEY);
   const deviceId = legacyId && UUID_PATTERN.test(legacyId) ? legacyId : crypto.randomUUID();
   let secret = localStorage.getItem(RECOVERY_SECRET_KEY);
@@ -586,8 +591,9 @@ function MenuAppContent({
         } = await supabase.auth.getUser();
 
         let userId = existingUser?.id ?? null;
+        const hadStaffSession = Boolean(existingUser && !existingUser.is_anonymous);
 
-        if (!userId) {
+        if (!userId || hadStaffSession) {
           await supabase.auth.signOut().catch(() => {});
           const { data, error } =
             await supabase.auth.signInAnonymously();
@@ -604,7 +610,7 @@ function MenuAppContent({
 
           userId = data.user.id;
         }
-        const credentials = deviceCredentials();
+        const credentials = deviceCredentials(hadStaffSession);
         const cachedName = localStorage.getItem(NAME_KEY);
 
         const { data: recovered, error: recoveryError } = await supabase.rpc("recover_customer_device", {
@@ -613,15 +619,28 @@ function MenuAppContent({
           p_full_name: cachedName,
           p_legacy_customer_id: credentials.legacyCustomerId,
         });
-        if (recoveryError || !recovered) {
-          setSessionError("We couldn't restore your customer profile. Please refresh and try again.");
-          return;
-        }
-        const profile = recovered as {
+        let profile = recovered as {
           customer_id: string;
           full_name: string | null;
           loyalty_points: number;
-        };
+        } | null;
+        if (recoveryError || !profile) {
+          const freshCredentials = deviceCredentials(true);
+          const { data: fresh, error: freshError } = await supabase.rpc("start_fresh_customer_device", {
+            p_device_id: freshCredentials.deviceId,
+            p_recovery_secret: freshCredentials.secret,
+          });
+          if (freshError || !fresh) {
+            setSessionError("We couldn't start a fresh customer profile. Please close this page and scan the table QR code again.");
+            return;
+          }
+          profile = fresh as typeof profile;
+          setOrderIds([]);
+          setLoyaltyPoints(0);
+          setIdentity({ userId, customerId: userId, name: "" });
+          setAwaitingName(true);
+          return;
+        }
 
         const { data: pastOrders } = await supabase
           .from("orders")

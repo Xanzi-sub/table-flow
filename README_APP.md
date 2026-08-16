@@ -223,12 +223,16 @@ public landing page uses the TableFlow green brand direction and larger logo.
   history, feedback and notifications to the new auth identity before ordering
   is enabled. Clearing all browser storage still starts a genuinely fresh guest
   because no secure recovery proof remains.
+- **Recovery fallback:** customer menus reject staff-auth sessions. If recovery
+  credentials are stale or invalid, TableFlow rotates the local customer
+  credentials, creates a clean anonymous profile and immediately opens name
+  onboarding instead of trapping the guest in a refresh loop.
 - **Floor request source:** active `table_service_requests` rows—not the lossy
   table status alone—drive waiter-call and bill-request badges, panels and
   drawer details. Realtime plus polling keeps them visible until resolved.
 - **Checkout resilience:** every cart submission has a stable idempotency key,
   so an interrupted response can be retried without creating a duplicate order.
-- **Database:** migrations currently run through `0034_customer_device_identity.sql`.
+- **Database:** migrations currently run through `0035_customer_staff_identity_guard.sql`.
 
 See [README.md](README.md) for installation, environment variables, migrations,
 Edge Function deployment, routes and external support API examples.

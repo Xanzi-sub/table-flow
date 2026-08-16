@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { listAllCashoutRequests, resolveCashoutRequest } from "@/app/actions/tips";
 import { createClient } from "@/lib/supabase/client";
 import { formatCurrency, formatDateTime, formatStaffName } from "@/lib/utils";
 import type { TipCashoutStatus } from "@/types/database";
@@ -48,27 +47,36 @@ function ResolvePanel({
   async function handleSubmit() {
     setLoading(true);
     setError(null);
+    try {
+      const status: TipCashoutStatus = mode === "approve" ? "approved" : mode === "schedule" ? "scheduled" : "rejected";
+      const response = await fetch("/api/tips/cashouts", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requestId: request.id,
+          status,
+          scheduledFor: mode === "schedule" ? scheduledFor || undefined : undefined,
+          notes: notes || undefined,
+        }),
+      });
+      const result = (await response.json()) as { success?: boolean; error?: string };
+      if (!response.ok || !result.success) {
+        setError(result.error ?? "Could not resolve request");
+        return;
+      }
 
-    const status: TipCashoutStatus = mode === "approve" ? "approved" : mode === "schedule" ? "scheduled" : "rejected";
-    const result = await resolveCashoutRequest(request.id, {
-      status,
-      scheduledFor: mode === "schedule" ? scheduledFor || undefined : undefined,
-      notes: notes || undefined,
-    });
-
-    setLoading(false);
-    if (!result.success) {
-      setError(result.error ?? "Could not resolve request");
-      return;
+      onResolved(request.id, {
+        status,
+        scheduled_for: mode === "schedule" ? scheduledFor || null : null,
+        notes: notes || null,
+        resolved_at: new Date().toISOString(),
+      });
+      onClose();
+    } catch {
+      setError("Could not reach the server. Refresh the page and try again.");
+    } finally {
+      setLoading(false);
     }
-
-    onResolved(request.id, {
-      status,
-      scheduled_for: mode === "schedule" ? scheduledFor || null : null,
-      notes: notes || null,
-      resolved_at: new Date().toISOString(),
-    });
-    onClose();
   }
 
   return (
@@ -138,8 +146,14 @@ export function TipsCashoutManager({ initialRequests }: { initialRequests: Casho
   useEffect(() => {
     const supabase = createClient();
     async function refresh() {
-      const latest = await listAllCashoutRequests();
-      setRequests(latest as unknown as CashoutRequestRow[]);
+      try {
+        const response = await fetch("/api/tips/cashouts", { cache: "no-store" });
+        if (!response.ok) return;
+        const latest = (await response.json()) as CashoutRequestRow[];
+        setRequests(latest);
+      } catch {
+        // Keep current data and retry on the next realtime/fallback cycle.
+      }
     }
     const channel = supabase
       .channel("admin-tip-cashouts")

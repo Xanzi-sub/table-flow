@@ -33,10 +33,12 @@ export function StaffWebAppBridge({ staffId, venueId }: { staffId: string; venue
   const [showIosHelp, setShowIosHelp] = useState(false);
   const [showPushPrompt, setShowPushPrompt] = useState(false);
   const [working, setWorking] = useState(false);
+  const [pushError, setPushError] = useState<string | null>(null);
 
   const registerWebPush = useCallback(async () => {
     if (Capacitor.isNativePlatform() || !("serviceWorker" in navigator) || !("Notification" in window)) return;
     setWorking(true);
+    setPushError(null);
     try {
       playAlertSound();
       const permission = Notification.permission === "granted"
@@ -69,7 +71,7 @@ export function StaffWebAppBridge({ staffId, venueId }: { staffId: string; venue
       });
       if (!token) return;
       const supabase = createClient();
-      await supabase.from("staff_devices").upsert(
+      const { error } = await supabase.from("staff_devices").upsert(
         {
           staff_id: staffId,
           venue_id: venueId ?? null,
@@ -82,7 +84,11 @@ export function StaffWebAppBridge({ staffId, venueId }: { staffId: string; venue
         },
         { onConflict: "staff_id,device_identifier" }
       );
+      if (error) throw new Error(error.message);
       setShowPushPrompt(false);
+    } catch {
+      setPushError("Could not register this device. Check site notification permission and try again.");
+      setShowPushPrompt(true);
     } finally {
       setWorking(false);
     }
@@ -163,6 +169,7 @@ export function StaffWebAppBridge({ staffId, venueId }: { staffId: string; venue
             <div>
               <p className="text-sm font-bold text-slate-900">Enable browser alerts</p>
               <p className="mt-1 text-xs leading-5 text-slate-600">Receive new-order and customer-request notifications on this computer or phone, even when TableFlow is in the background.</p>
+              {pushError && <p className="mt-2 text-xs font-semibold text-red-600">{pushError}</p>}
               <div className="mt-3 flex gap-2">
                 <button onClick={registerWebPush} disabled={working} className="btn btn-primary">{working ? "Enabling..." : "Enable alerts"}</button>
                 <button onClick={() => setShowPushPrompt(false)} className="btn btn-secondary">Not now</button>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { markOrderPaid } from "@/app/actions/tables";
 import type { PaymentMethod } from "@/types/database";
 
 /** Small tip-capture step inserted between "Cash/Card" and actually marking a table paid. */
@@ -27,13 +26,23 @@ export function MarkPaidDialog({
   async function handleConfirm() {
     setLoading(true);
     setError(null);
-    const result = await markOrderPaid(orderId, method, Number(tip) || 0);
-    setLoading(false);
-    if (!result.success) {
-      setError(result.error ?? "Could not mark as paid");
-      return;
+    try {
+      const response = await fetch("/api/orders/payment", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, method, tipAmount: Number(tip) || 0 }),
+      });
+      const result = (await response.json()) as { success?: boolean; error?: string };
+      if (!response.ok || !result.success) {
+        setError(result.error ?? "Could not mark as paid");
+        return;
+      }
+      onSuccess();
+    } catch {
+      setError("The payment request was interrupted. Please try again.");
+    } finally {
+      setLoading(false);
     }
-    onSuccess();
   }
 
   return (

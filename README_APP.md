@@ -200,12 +200,15 @@ public landing page uses the TableFlow green brand direction and larger logo.
   or closed apps. Tokens are stored per authenticated staff device. New orders, calls,
   bill requests, cancellations, assignments and unassigned work are routed
   from authoritative database state.
+- **Operational recipients:** the assigned waiter receives the primary alert;
+  managers/admins receive persistent copies of new-order, waiter-call, bill and
+  cancellation alerts for venue-wide oversight.
 - **Install experience:** authenticated Chrome staff receive a native browser
   install prompt when eligible; standalone installs are detected and not
   prompted again. Safari receives Add to Home Screen guidance.
 - **Checkout resilience:** every cart submission has a stable idempotency key,
   so an interrupted response can be retried without creating a duplicate order.
-- **Database:** migrations currently run through `0029_order_idempotency.sql`.
+- **Database:** migrations currently run through `0030_manager_notification_fanout.sql`.
 
 See [README.md](README.md) for installation, environment variables, migrations,
 Edge Function deployment, routes and external support API examples.

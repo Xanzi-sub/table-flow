@@ -42,6 +42,12 @@ export function playAlertSound() {
   else ring();
 }
 
+function unlockAlertSound() {
+  if (window.localStorage.getItem(SOUND_KEY) === "off" || !window.AudioContext) return;
+  alertAudioContext ??= new window.AudioContext();
+  if (alertAudioContext.state === "suspended") void alertAudioContext.resume();
+}
+
 export function NativePushBridge({ staffId, venueId }: { staffId: string; venueId?: string | null }) {
   const [showPermission, setShowPermission] = useState(false);
   const [registering, setRegistering] = useState(false);
@@ -169,21 +175,26 @@ export function StaffNotificationCentre({
   const [notifications, setNotifications] = useState<StaffNotification[]>([]);
   const [open, setOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const initialized = useRef(false);
 
   const load = useCallback(async () => {
     const supabase = createClient();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("staff_notifications")
       .select("*")
       .eq("recipient_staff_id", staffId)
       .order("created_at", { ascending: false })
       .limit(100);
+    setLoadError(Boolean(error));
     setNotifications(data ?? []);
   }, [staffId]);
 
   useEffect(() => {
     setSoundEnabled(window.localStorage.getItem(SOUND_KEY) !== "off");
+    const unlock = () => unlockAlertSound();
+    window.addEventListener("pointerdown", unlock, { once: true });
+    window.addEventListener("keydown", unlock, { once: true });
     void load().then(() => { initialized.current = true; });
     const supabase = createClient();
     const channel = supabase
@@ -218,7 +229,11 @@ export function StaffNotificationCentre({
         () => void load()
       )
       .subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+      void supabase.removeChannel(channel);
+    };
   }, [instanceId, load, router, staffId]);
 
   async function markRead(notification: StaffNotification) {
@@ -262,6 +277,7 @@ export function StaffNotificationCentre({
         </div>
       ) : (
         <div className="card overflow-hidden">
+          {loadError && <p className="border-b border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700">Could not load notifications. Refresh and try again.</p>}
           <NotificationList notifications={list} unread={unread} soundEnabled={soundEnabled} onRead={markRead} onMarkAll={markAllRead} onToggleSound={toggleSound} />
         </div>
       )}

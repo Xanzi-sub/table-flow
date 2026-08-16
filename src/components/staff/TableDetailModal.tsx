@@ -3,11 +3,6 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatCurrency, formatDateTime, formatStaffName } from "@/lib/utils";
-import { updateOrderStatus } from "@/app/actions/orders";
-import {
-  resolveServiceRequest,
-  reassignTableWaiter,
-} from "@/app/actions/tables";
 import { MarkPaidDialog } from "./MarkPaidDialog";
 import { Select } from "@/components/ui/Select";
 import type {
@@ -111,21 +106,23 @@ function OrderCard({
     if (!nextStatus || updating) return;
 
     setUpdating(true);
-
-    const result = await updateOrderStatus(
-      order.id,
-      nextStatus
-    );
-
-    setUpdating(false);
-
-    if (!result?.success) {
-      setPayError(
-        result?.error ?? "Could not update order status."
-      );
-      return;
+    try {
+      const response = await fetch("/api/orders/status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: order.id, status: nextStatus }),
+      });
+      const result = (await response.json()) as { success?: boolean; error?: string };
+      if (!response.ok || !result.success) {
+        setPayError(result.error ?? "Could not update order status.");
+        return;
+      }
+      onOrderUpdated(order.id, { status: nextStatus });
+    } catch {
+      setPayError("The update was interrupted. Please try again.");
+    } finally {
+      setUpdating(false);
     }
-    onOrderUpdated(order.id, { status: nextStatus });
   }
 
   function handlePaymentSuccess() {
@@ -355,18 +352,21 @@ function ReassignWaiter({
     setSaving(true);
     setError(null);
 
-    const result = await reassignTableWaiter(
-      tableId,
-      nextId || null
-    );
-
-    setSaving(false);
-
-    if (!result.success) {
-      setError(
-        result.error ?? "Could not reassign waiter."
-      );
+    try {
+      const response = await fetch("/api/tables/operations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reassign", tableId, waiterId: nextId || null }),
+      });
+      const result = (await response.json()) as { success?: boolean; error?: string };
+      if (response.ok && result.success) return;
+      setError(result.error ?? "Could not reassign waiter.");
       setValue(currentWaiterId ?? "");
+    } catch {
+      setError("The reassignment was interrupted. Please try again.");
+      setValue(currentWaiterId ?? "");
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -450,8 +450,15 @@ export function TableDetailModal({
   async function handleResolveRequest() {
     setResolvingRequest(true);
     onServiceResolved(table.id);
-    await resolveServiceRequest(table.id);
-    setResolvingRequest(false);
+    try {
+      await fetch("/api/tables/operations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "resolve_service", tableId: table.id }),
+      });
+    } finally {
+      setResolvingRequest(false);
+    }
   }
 
   function handleOrderUpdated(orderId: string, updates: Partial<Order>) {

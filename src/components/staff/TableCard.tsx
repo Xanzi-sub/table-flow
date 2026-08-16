@@ -1,7 +1,6 @@
 "use client";
 
 import type { TableRow } from "@/types/database";
-import { resolveServiceRequest } from "@/app/actions/tables";
 import { useState } from "react";
 import { formatStaffName } from "@/lib/utils";
 
@@ -47,11 +46,15 @@ export function TableCard({
   async function handleResolveRequest() {
     setLoading(true);
     onServiceResolved(table.id);
-    const result = await resolveServiceRequest(table.id);
-    if (!result.success) {
-      // The dashboard fallback sync restores server truth if the update fails.
+    try {
+      await fetch("/api/tables/operations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "resolve_service", tableId: table.id }),
+      });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (

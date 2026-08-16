@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 import { useCart } from "@/context/CartContext";
 import { formatCurrency } from "@/lib/utils";
@@ -45,39 +45,46 @@ export function CartDrawer({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [applyLoyalty, setApplyLoyalty] = useState(false);
+  const requestId = useRef<string | null>(null);
 
   if (!open) return null;
 
   async function handleSubmit() {
     setSubmitting(true);
     setError(null);
+    requestId.current ??= crypto.randomUUID();
+    try {
+      const result = await submitOrder({
+      requestId: requestId.current,
+        tableId,
+        customerSessionId,
+        customerId: customerId ?? undefined,
+        items: lines.map((l) => ({
+          kind: l.kind,
+          menuItemId: l.kind === "item" ? l.item.id : undefined,
+          specialId: l.specialId,
+          quantity: l.quantity,
+          notes: l.notes || undefined,
+        })),
+        loyaltyPointsToUse: applyLoyalty ? redeemablePoints : 0,
+      });
 
-    const result = await submitOrder({
-      tableId,
-      customerSessionId,
-      customerId: customerId ?? undefined,
-      items: lines.map((l) => ({
-        kind: l.kind,
-        menuItemId: l.kind === "item" ? l.item.id : undefined,
-        specialId: l.specialId,
-        quantity: l.quantity,
-        notes: l.notes || undefined,
-      })),
-      loyaltyPointsToUse: applyLoyalty ? redeemablePoints : 0,
-    });
+      if (!result.success || !result.data) {
+        setError(result.error ?? "Could not place your order");
+        return;
+      }
 
-    setSubmitting(false);
-
-    if (!result.success || !result.data) {
-      setError(result.error ?? "Could not place your order");
-      return;
+      clear();
+      requestId.current = null;
+      if (result.data.loyaltyPointsRedeemed > 0) {
+        onPointsChanged(Math.max(0, loyaltyPoints - result.data.loyaltyPointsRedeemed));
+      }
+      onOrderSubmitted(result.data.orderId);
+    } catch {
+      setError("The order request was interrupted. Please check your orders before trying again.");
+    } finally {
+      setSubmitting(false);
     }
-
-    clear();
-    if (result.data.loyaltyPointsRedeemed > 0) {
-      onPointsChanged(Math.max(0, loyaltyPoints - result.data.loyaltyPointsRedeemed));
-    }
-    onOrderSubmitted(result.data.orderId);
   }
 
   const regularAmount = lines.reduce((sum, line) => {

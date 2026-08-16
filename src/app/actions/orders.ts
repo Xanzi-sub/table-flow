@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { enforceRateLimit, RateLimitError } from "@/lib/security";
@@ -40,13 +41,14 @@ function specialAuditLabel(special: MenuSpecial) {
 
 /** Creates an order + its line items for the customer's own (RLS-verified) session. */
 export async function submitOrder(input: {
+  requestId: string;
   tableId: string;
   customerSessionId: string;
   customerId?: string;
   items: CartLine[];
   loyaltyPointsToUse?: number;
 }): Promise<ActionResult<{ orderId: string; totalAmount: number; loyaltyPointsRedeemed: number; loyaltyDiscount: number }>> {
-  if (!UUID_PATTERN.test(input.tableId) || input.items.length === 0 || input.items.length > 50) {
+  if (!UUID_PATTERN.test(input.requestId) || !UUID_PATTERN.test(input.tableId) || input.items.length === 0 || input.items.length > 50) {
     return { success: false, error: "Invalid order" };
   }
   if (
@@ -70,6 +72,23 @@ export async function submitOrder(input: {
   } = await supabase.auth.getUser();
   if (!user || input.customerSessionId !== user.id) {
     return { success: false, error: "Your ordering session has expired." };
+  }
+  const { data: existingOrder } = await supabase
+    .from("orders")
+    .select("id, total_amount, loyalty_points_redeemed, loyalty_discount_amount")
+    .eq("customer_session_id", user.id)
+    .eq("client_request_id", input.requestId)
+    .maybeSingle();
+  if (existingOrder) {
+    return {
+      success: true,
+      data: {
+        orderId: existingOrder.id,
+        totalAmount: existingOrder.total_amount,
+        loyaltyPointsRedeemed: existingOrder.loyalty_points_redeemed,
+        loyaltyDiscount: existingOrder.loyalty_discount_amount,
+      },
+    };
   }
   try {
     await enforceRateLimit({
@@ -192,6 +211,7 @@ export async function submitOrder(input: {
     .from("orders")
     .insert({
       table_id: input.tableId,
+      client_request_id: input.requestId,
       customer_session_id: input.customerSessionId,
       customer_id: input.customerId ?? null,
       total_amount: totalAmount,
@@ -237,13 +257,16 @@ export async function submitOrder(input: {
   // insert (see migration 0008) — a client-side update here would silently
   // no-op under RLS, since customers aren't staff.
 
-  // Fire-and-forget: a receipt delivery failure should never break checkout.
-  supabase.functions
-    .invoke("send-order-receipt", { body: { orderId: order.id } })
-    .catch(() => {});
-  supabase.functions
-    .invoke("send-staff-push", { body: { orderId: order.id, notificationType: "new_order" } })
-    .catch(() => {});
+  // Provider calls run after the action response so receipt/push latency can
+  // never keep the customer stuck on "Placing order".
+  after(async () => {
+    await Promise.allSettled([
+      supabase.functions.invoke("send-order-receipt", { body: { orderId: order.id } }),
+      supabase.functions.invoke("send-staff-push", {
+        body: { orderId: order.id, notificationType: "new_order" },
+      }),
+    ]);
+  });
 
   revalidatePath("/staff/dashboard");
   return {
@@ -297,9 +320,11 @@ export async function requestTableAssistance(
   if (error) return { success: false, error: error.message };
   const { data: request } = await supabase.from("table_service_requests").select("order_id").eq("id", requestId).single();
   if (request?.order_id) {
-    supabase.functions.invoke("send-staff-push", {
-      body: { orderId: request.order_id, notificationType: requestType },
-    }).catch(() => {});
+    after(async () => {
+      await supabase.functions.invoke("send-staff-push", {
+        body: { orderId: request.order_id, notificationType: requestType },
+      }).catch(() => {});
+    });
   }
 
   revalidatePath("/staff/dashboard");
@@ -321,9 +346,11 @@ export async function updateOrderStatus(
 
   if (error) return { success: false, error: error.message };
   if (status === "cancelled") {
-    supabase.functions.invoke("send-staff-push", {
-      body: { orderId, notificationType: "order_cancelled" },
-    }).catch(() => {});
+    after(async () => {
+      await supabase.functions.invoke("send-staff-push", {
+        body: { orderId, notificationType: "order_cancelled" },
+      }).catch(() => {});
+    });
   }
 
   // Completing an order frees up the table, but only once every other

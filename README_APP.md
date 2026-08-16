@@ -203,7 +203,9 @@ public landing page uses the TableFlow green brand direction and larger logo.
 - **Install experience:** authenticated Chrome staff receive a native browser
   install prompt when eligible; standalone installs are detected and not
   prompted again. Safari receives Add to Home Screen guidance.
-- **Database:** migrations currently run through `0028_web_push_devices.sql`.
+- **Checkout resilience:** every cart submission has a stable idempotency key,
+  so an interrupted response can be retried without creating a duplicate order.
+- **Database:** migrations currently run through `0029_order_idempotency.sql`.
 
 See [README.md](README.md) for installation, environment variables, migrations,
 Edge Function deployment, routes and external support API examples.

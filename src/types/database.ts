@@ -266,6 +266,7 @@ export interface CustomerProfile {
 
 export interface Order {
   id: string;
+  client_request_id: string | null;
   table_id: string;
   waiter_id: string | null;
   status: OrderStatus;

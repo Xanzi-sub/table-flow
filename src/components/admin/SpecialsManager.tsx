@@ -27,6 +27,7 @@ interface FormState {
   itemIds: string[];
   discountType: MenuSpecialDiscountType;
   discountValue: string;
+  applicableQuantity: string;
   buyQuantity: string;
   payQuantity: string;
   status: MenuItemStatus;
@@ -41,6 +42,7 @@ const EMPTY_FORM: FormState = {
   itemIds: [],
   discountType: "percentage",
   discountValue: "",
+  applicableQuantity: "1",
   buyQuantity: "2",
   payQuantity: "1",
   status: "draft",
@@ -69,6 +71,7 @@ function toInput(form: FormState): SpecialInput {
     itemIds: form.itemIds,
     discountType: form.kind === "combo" ? "fixed_price" : form.discountType,
     discountValue: form.discountType === "quantity_deal" ? 0 : Number(form.discountValue),
+    applicableQuantity: Number(form.applicableQuantity),
     buyQuantity: Number(form.buyQuantity),
     payQuantity: Number(form.payQuantity),
     status: form.status,
@@ -85,6 +88,7 @@ function specialToForm(special: MenuSpecial): FormState {
     itemIds: special.item_ids,
     discountType: special.discount_type,
     discountValue: special.discount_value.toString(),
+    applicableQuantity: special.applicable_quantity.toString(),
     buyQuantity: special.buy_quantity.toString(),
     payQuantity: special.pay_quantity.toString(),
     status: special.status,
@@ -314,21 +318,48 @@ export function SpecialsManager({
                   </p>
                 </div>
               ) : (
-                <label className={`text-sm ${form.kind === "combo" ? "col-span-2" : ""}`}>
-                  <span className="label">
-                    {form.kind === "combo" || form.discountType === "fixed_price" ? "Special price (R)" : "Discount (%)"}
-                  </span>
-                  <input
-                    required
-                    type="number"
-                    min={0}
-                    max={form.discountType === "percentage" ? 100 : undefined}
-                    step="0.01"
-                    value={form.discountValue}
-                    onChange={(event) => setForm((current) => ({ ...current, discountValue: event.target.value }))}
-                    className="input"
-                  />
-                </label>
+                <>
+                  <label className={`text-sm ${form.kind === "combo" ? "col-span-2" : ""}`}>
+                    <span className="label">
+                      {form.kind === "combo" || form.discountType === "fixed_price" ? "Package price (R)" : "Discount (%)"}
+                    </span>
+                    <input
+                      required
+                      type="number"
+                      min={0}
+                      max={form.discountType === "percentage" ? 100 : undefined}
+                      step="0.01"
+                      value={form.discountValue}
+                      onChange={(event) => setForm((current) => ({ ...current, discountValue: event.target.value }))}
+                      className="input"
+                    />
+                  </label>
+                  {form.kind === "item_discount" && (
+                    <label className="text-sm">
+                      <span className="label">
+                        {form.discountType === "fixed_price" ? "Items in each package" : "Applies from quantity"}
+                      </span>
+                      <input
+                        required
+                        type="number"
+                        min={1}
+                        step="1"
+                        value={form.applicableQuantity}
+                        onChange={(event) =>
+                          setForm((current) => ({ ...current, applicableQuantity: event.target.value }))
+                        }
+                        className="input"
+                      />
+                    </label>
+                  )}
+                  {form.kind === "item_discount" && (
+                    <p className="col-span-2 text-xs text-[var(--foreground-muted)]">
+                      {form.discountType === "fixed_price"
+                        ? `Example: ${form.applicableQuantity || "2"} selected items for ${formatCurrency(Number(form.discountValue) || 0)}. Extra items are charged normally.`
+                        : `The percentage starts only when the customer orders at least ${form.applicableQuantity || "1"}.`}
+                    </p>
+                  )}
+                </>
               )}
             </div>
 
@@ -429,10 +460,10 @@ export function SpecialsManager({
                   <div className="text-right">
                     <p className="text-lg font-bold text-[var(--foreground)]">
                       {special.discount_type === "percentage"
-                        ? `${special.discount_value}% off`
+                        ? `${special.discount_value}% off from ${special.applicable_quantity}`
                         : special.discount_type === "quantity_deal"
                           ? `Buy ${special.buy_quantity}, pay for ${special.pay_quantity}`
-                          : formatCurrency(special.discount_value)}
+                          : `${special.applicable_quantity} for ${formatCurrency(special.discount_value)}`}
                     </p>
                     {special.kind === "combo" && (
                       <p className="text-[10px] text-[var(--foreground-muted)]">

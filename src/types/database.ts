@@ -152,6 +152,7 @@ export interface MenuSpecial {
   item_ids: string[];
   discount_type: MenuSpecialDiscountType;
   discount_value: number;
+  applicable_quantity: number;
   buy_quantity: number;
   pay_quantity: number;
   status: MenuItemStatus;

@@ -25,6 +25,16 @@ interface PricedOrderLine {
 
 const roundMoney = (value: number) => Math.round(value * 100) / 100;
 
+function specialAuditLabel(special: MenuSpecial) {
+  if (special.discount_type === "quantity_deal") {
+    return `${special.name} · Buy ${special.buy_quantity}, pay for ${special.pay_quantity}`;
+  }
+  if (special.discount_type === "fixed_price") {
+    return `${special.name} · ${special.applicable_quantity} for R${special.discount_value.toFixed(2)}`;
+  }
+  return `${special.name} · ${special.discount_value}% off from quantity ${special.applicable_quantity}`;
+}
+
 /** Creates an order + its line items for the customer's own (RLS-verified) session. */
 export async function submitOrder(input: {
   tableId: string;
@@ -111,9 +121,16 @@ export async function submitOrder(input: {
             : quantity;
         const total =
           special.discount_type === "percentage"
-            ? roundMoney(item.price * (1 - special.discount_value / 100) * quantity)
+            ? roundMoney(
+                (quantity >= special.applicable_quantity
+                  ? item.price * (1 - special.discount_value / 100)
+                  : item.price) * quantity
+              )
             : special.discount_type === "fixed_price"
-              ? roundMoney(Math.min(item.price, special.discount_value) * quantity)
+              ? roundMoney(
+                  Math.floor(quantity / special.applicable_quantity) * special.discount_value +
+                    (quantity % special.applicable_quantity) * item.price
+                )
               : roundMoney(item.price * chargedUnits);
         return { special, total };
       })
@@ -126,7 +143,7 @@ export async function submitOrder(input: {
       unit_price: Math.max(0, best ? best.total / quantity : item.price),
       bundle_id: null,
       special_id: best?.special.id ?? null,
-      special_name: best?.special.name ?? null,
+      special_name: best ? specialAuditLabel(best.special) : null,
     });
   }
 

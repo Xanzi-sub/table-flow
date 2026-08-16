@@ -17,6 +17,7 @@ export interface SpecialInput {
   itemIds: string[];
   discountType: MenuSpecialDiscountType;
   discountValue: number;
+  applicableQuantity?: number;
   buyQuantity?: number;
   payQuantity?: number;
   status: MenuItemStatus;
@@ -29,6 +30,7 @@ function validateSpecial(input: SpecialInput): string | null {
   if (input.itemIds.length === 0) return "Select at least one menu item.";
   if (input.kind === "combo" && input.itemIds.length < 2) return "A paired combo needs at least two items.";
   if (input.discountValue < 0) return "Price or discount cannot be negative.";
+  if ((input.applicableQuantity ?? 1) < 1) return "Applicable quantity must be at least 1.";
   if (input.discountType === "percentage" && input.discountValue > 100) return "Percentage cannot exceed 100%.";
   if (input.discountType === "quantity_deal") {
     const buy = input.buyQuantity ?? 1;
@@ -76,6 +78,8 @@ export async function createSpecial(input: SpecialInput): Promise<ActionResult<{
       item_ids: input.itemIds,
       discount_type: input.kind === "combo" ? "fixed_price" : input.discountType,
       discount_value: input.discountValue,
+      applicable_quantity:
+        input.discountType === "quantity_deal" ? input.buyQuantity ?? 2 : input.applicableQuantity ?? 1,
       buy_quantity: input.discountType === "quantity_deal" ? input.buyQuantity ?? 2 : 1,
       pay_quantity: input.discountType === "quantity_deal" ? input.payQuantity ?? 1 : 1,
       status: input.status,
@@ -105,6 +109,8 @@ export async function updateSpecial(id: string, input: SpecialInput): Promise<Ac
       item_ids: input.itemIds,
       discount_type: input.kind === "combo" ? "fixed_price" : input.discountType,
       discount_value: input.discountValue,
+      applicable_quantity:
+        input.discountType === "quantity_deal" ? input.buyQuantity ?? 2 : input.applicableQuantity ?? 1,
       buy_quantity: input.discountType === "quantity_deal" ? input.buyQuantity ?? 2 : 1,
       pay_quantity: input.discountType === "quantity_deal" ? input.payQuantity ?? 1 : 1,
       status: input.status,

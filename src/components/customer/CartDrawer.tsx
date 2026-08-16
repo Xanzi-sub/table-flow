@@ -206,7 +206,9 @@ export function CartDrawer({
                                   ? "Paired combo"
                                   : line.specialDiscountType === "quantity_deal"
                                     ? `Buy ${line.buyQuantity}, pay ${line.payQuantity}`
-                                    : "Special applied"}
+                                    : line.specialDiscountType === "fixed_price"
+                                      ? `${line.applicableQuantity} for ${formatCurrency(line.unitPrice)}`
+                                      : `Discount from quantity ${line.applicableQuantity}`}
                               </p>
                             )}
 

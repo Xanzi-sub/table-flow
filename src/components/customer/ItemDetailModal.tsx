@@ -26,7 +26,10 @@ export function ItemDetailModal({
   }
 
   const offer = getItemOffer(item);
-  const effectivePrice = offer?.unitPrice ?? item.price;
+  const effectivePrice =
+    offer?.discountType === "percentage" && quantity >= offer.applicableQuantity
+      ? offer.unitPrice
+      : item.price;
   const total = calculateItemOfferTotal(item, offer, quantity);
 
   return (
@@ -112,7 +115,9 @@ export function ItemDetailModal({
                 <div className="mt-3 rounded-[13px] bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800">
                   {offer.discountType === "quantity_deal"
                     ? `${offer.specialName}: buy ${offer.buyQuantity}, pay for ${offer.payQuantity}`
-                    : `${offer.specialName} applied automatically`}
+                    : offer.discountType === "fixed_price"
+                      ? `${offer.specialName}: ${offer.applicableQuantity} for ${formatCurrency(offer.unitPrice)}`
+                      : `${offer.specialName}: ${offer.unitPrice < item.price ? `${formatCurrency(offer.unitPrice)} each` : "discount"} from quantity ${offer.applicableQuantity}`}
                 </div>
               )}
 

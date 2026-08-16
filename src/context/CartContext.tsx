@@ -21,6 +21,7 @@ export interface CartLine {
   specialId?: string;
   specialName?: string;
   specialDiscountType?: MenuSpecialDiscountType;
+  applicableQuantity?: number;
   buyQuantity?: number;
   payQuantity?: number;
   kind: "item" | "combo";
@@ -32,13 +33,21 @@ export interface ItemOffer {
   specialName: string;
   unitPrice: number;
   discountType: MenuSpecialDiscountType;
+  applicableQuantity: number;
   buyQuantity: number;
   payQuantity: number;
 }
 
 export function calculateItemOfferTotal(item: MenuItem, offer: ItemOffer | null, quantity: number) {
   if (!offer) return item.price * quantity;
-  if (offer.discountType !== "quantity_deal") return offer.unitPrice * quantity;
+  if (offer.discountType === "percentage") {
+    return quantity >= offer.applicableQuantity ? offer.unitPrice * quantity : item.price * quantity;
+  }
+  if (offer.discountType === "fixed_price") {
+    const groups = Math.floor(quantity / offer.applicableQuantity);
+    const remainder = quantity % offer.applicableQuantity;
+    return groups * offer.unitPrice + remainder * item.price;
+  }
   const groups = Math.floor(quantity / offer.buyQuantity);
   const remainder = quantity % offer.buyQuantity;
   return item.price * (groups * offer.payQuantity + remainder);
@@ -52,6 +61,7 @@ export function calculateCartLineTotal(line: CartLine) {
         specialName: line.specialName ?? "Special",
         unitPrice: line.unitPrice,
         discountType: line.specialDiscountType ?? "fixed_price",
+        applicableQuantity: line.applicableQuantity ?? 1,
         buyQuantity: line.buyQuantity ?? 1,
         payQuantity: line.payQuantity ?? 1,
       }
@@ -95,6 +105,7 @@ export function CartProvider({ children, specials }: { children: React.ReactNode
             specialId: line.specialId,
             specialName: line.specialName,
             specialDiscountType: line.specialDiscountType,
+            applicableQuantity: line.applicableQuantity,
             buyQuantity: line.buyQuantity,
             payQuantity: line.payQuantity,
             kind: line.kind ?? "item",
@@ -124,9 +135,10 @@ export function CartProvider({ children, specials }: { children: React.ReactNode
             special.discount_type === "percentage"
               ? Math.max(0, item.price * (1 - special.discount_value / 100))
               : special.discount_type === "fixed_price"
-                ? Math.min(item.price, special.discount_value)
+                ? special.discount_value
                 : item.price,
           discountType: special.discount_type,
+          applicableQuantity: special.applicable_quantity,
           buyQuantity: special.buy_quantity,
           payQuantity: special.pay_quantity,
           comparisonPrice:
@@ -134,7 +146,7 @@ export function CartProvider({ children, specials }: { children: React.ReactNode
               ? item.price * (special.pay_quantity / special.buy_quantity)
               : special.discount_type === "percentage"
                 ? item.price * (1 - special.discount_value / 100)
-                : Math.min(item.price, special.discount_value),
+                : special.discount_value / special.applicable_quantity,
         }))
         .sort((first, second) => first.comparisonPrice - second.comparisonPrice);
       if (!offers[0]) return null;
@@ -143,6 +155,7 @@ export function CartProvider({ children, specials }: { children: React.ReactNode
         specialName: offers[0].specialName,
         unitPrice: Math.round(offers[0].unitPrice * 100) / 100,
         discountType: offers[0].discountType,
+        applicableQuantity: offers[0].applicableQuantity,
         buyQuantity: offers[0].buyQuantity,
         payQuantity: offers[0].payQuantity,
       };
@@ -162,6 +175,7 @@ export function CartProvider({ children, specials }: { children: React.ReactNode
             unitPrice: special.discount_value,
             specialName: special.name,
             specialDiscountType: special.discount_type,
+            applicableQuantity: special.applicable_quantity,
             buyQuantity: special.buy_quantity,
             payQuantity: special.pay_quantity,
           }];
@@ -175,6 +189,7 @@ export function CartProvider({ children, specials }: { children: React.ReactNode
             specialId: offer?.specialId,
             specialName: offer?.specialName,
             specialDiscountType: offer?.discountType,
+            applicableQuantity: offer?.applicableQuantity,
             buyQuantity: offer?.buyQuantity,
             payQuantity: offer?.payQuantity,
           },
@@ -205,6 +220,7 @@ export function CartProvider({ children, specials }: { children: React.ReactNode
             specialId: offer?.specialId,
             specialName: offer?.specialName,
             specialDiscountType: offer?.discountType,
+            applicableQuantity: offer?.applicableQuantity,
             buyQuantity: offer?.buyQuantity,
             payQuantity: offer?.payQuantity,
             kind: "item" as const,
@@ -234,6 +250,7 @@ export function CartProvider({ children, specials }: { children: React.ReactNode
           specialId: special.id,
           specialName: special.name,
           specialDiscountType: special.discount_type,
+          applicableQuantity: special.applicable_quantity,
           buyQuantity: special.buy_quantity,
           payQuantity: special.pay_quantity,
           kind: "combo" as const,

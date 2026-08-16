@@ -76,7 +76,7 @@ export function OrderFeedbackForm({
             type="button"
             onClick={handleSubmit}
             disabled={submitting}
-            className="mt-3 w-full rounded-[13px] bg-[#171614] py-2.5 text-[12px] font-semibold text-white disabled:opacity-50"
+            className="mt-3 w-full rounded-[13px] bg-[var(--accent-500)] py-2.5 text-[12px] font-semibold text-white hover:bg-[var(--accent-600)] disabled:opacity-50"
           >
             {submitting ? "Sending…" : "Send feedback"}
           </button>

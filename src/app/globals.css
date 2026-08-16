@@ -15,13 +15,13 @@
   --gray-900: #0f172a;
   --gray-950: #020617;
 
-  /* ---- Brand accent: confident, vivid blue ---- */
-  --accent-50: #eff6ff;
-  --accent-100: #dbeafe;
-  --accent-200: #b4d4fb;
-  --accent-500: #2563eb;
-  --accent-600: #1d4ed8;
-  --accent-700: #1d4ed8;
+  /* ---- Brand accent: TableFlow deep green + fresh lime ---- */
+  --accent-50: #f2f8ec;
+  --accent-100: #e3f1d1;
+  --accent-200: #cdeb69;
+  --accent-500: #174c3a;
+  --accent-600: #103d2e;
+  --accent-700: #0c3327;
 
   /* ---- Semantic status colors ---- */
   --success-50: #ecfdf3;

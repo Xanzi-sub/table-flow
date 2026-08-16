@@ -80,7 +80,7 @@ export function MenuItemCard({
             type="button"
             aria-label={`Add ${item.name} to your order`}
             onClick={handleQuickAdd}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#171614] text-white shadow-[0_3px_10px_rgba(0,0,0,0.12)] transition-all duration-200 hover:scale-105 hover:bg-black active:scale-90"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--accent-500)] text-white shadow-[0_3px_10px_rgba(23,76,58,0.18)] transition-all duration-200 hover:scale-105 hover:bg-[var(--accent-600)] active:scale-90"
           >
             <svg
               width="17"

@@ -68,7 +68,7 @@ export default function VenueSignupPage() {
     >
       <form
         onSubmit={handleSubmit}
-        className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 p-8 shadow-xl lg:p-10"
+        className="w-full rounded-2xl border border-[#326750] bg-[#103d2e] p-8 shadow-xl lg:p-10"
       >
         <h2 className="text-lg font-bold text-white lg:hidden">Set up your venue</h2>
         <p className="mt-1 text-sm text-neutral-400 lg:mt-0">
@@ -93,7 +93,7 @@ export default function VenueSignupPage() {
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-neutral-700 bg-neutral-800 px-4 py-3 text-sm text-white"
+              className="mt-1 w-full rounded-xl border border-[#41735f] bg-[#174c3a] px-4 py-3 text-sm text-white"
             />
           </label>
           <label className="text-sm text-neutral-300">
@@ -103,7 +103,7 @@ export default function VenueSignupPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-neutral-700 bg-neutral-800 px-4 py-3 text-sm text-white"
+              className="mt-1 w-full rounded-xl border border-[#41735f] bg-[#174c3a] px-4 py-3 text-sm text-white"
             />
           </label>
           <label className="text-sm text-neutral-300">
@@ -114,7 +114,7 @@ export default function VenueSignupPage() {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-neutral-700 bg-neutral-800 px-4 py-3 text-sm text-white"
+              className="mt-1 w-full rounded-xl border border-[#41735f] bg-[#174c3a] px-4 py-3 text-sm text-white"
             />
           </label>
         </div>
@@ -122,7 +122,7 @@ export default function VenueSignupPage() {
         <button
           type="submit"
           disabled={loading || !!success}
-          className="mt-6 w-full rounded-xl bg-white py-3 text-sm font-semibold text-neutral-900 disabled:opacity-50"
+          className="mt-6 w-full rounded-xl bg-[#cdeb69] py-3 text-sm font-semibold text-[#0c3327] hover:bg-[#d8f27f] disabled:opacity-50"
         >
           {loading ? "Creating…" : "Create Venue"}
         </button>

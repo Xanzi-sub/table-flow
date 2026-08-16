@@ -217,7 +217,7 @@ function SpecialsRail({ specials, items }: { specials: MenuSpecial[]; items: Men
             <article key={special.id} className="min-w-[270px] rounded-[18px] border border-[#e2dbd1] bg-white p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <span className="rounded-full bg-[#171614] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.1em] text-white">
+                  <span className="rounded-full bg-[var(--accent-500)] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.1em] text-white">
                     {isCombo ? "Combo" : "Special"}
                   </span>
                   <h3 className="mt-2 truncate text-[14px] font-bold text-[#171614]">{special.name}</h3>
@@ -240,7 +240,7 @@ function SpecialsRail({ specials, items }: { specials: MenuSpecial[]; items: Men
                       ? addCombo(special, specialItems)
                       : addItem(specialItems[0], special.applicable_quantity, "")
                   }
-                  className="mt-3 w-full rounded-full bg-[#171614] py-2 text-[11px] font-semibold text-white"
+                  className="mt-3 w-full rounded-full bg-[var(--accent-500)] py-2 text-[11px] font-semibold text-white hover:bg-[var(--accent-600)]"
                 >
                   {isCombo ? "Add combo" : `Add ${special.applicable_quantity}`}
                 </button>

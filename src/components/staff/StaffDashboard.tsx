@@ -254,7 +254,7 @@ export function StaffDashboard({
               </div>
             )}
 
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#171A1F] text-[10px] font-semibold text-white">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--accent-500)] text-[10px] font-semibold text-white">
               {formatStaffName(profile.full_name)
                 .split(" ")
                 .map((name) => name[0])
@@ -323,7 +323,7 @@ export function StaffDashboard({
                   onClick={() => setFilter(item.id)}
                   className={`flex h-9 shrink-0 items-center gap-2 border-r border-[#E2E4E8] px-3 text-[10px] font-medium transition-colors last:border-r-0 ${
                     active
-                      ? "bg-[#171A1F] text-white"
+                      ? "bg-[var(--accent-500)] text-white"
                       : "bg-white text-[#69707A] hover:bg-[#F5F6F8]"
                   }`}
                 >

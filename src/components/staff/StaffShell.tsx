@@ -192,13 +192,13 @@ function NavigationGroup({
               aria-current={active ? "page" : undefined}
               className={`group flex h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold transition-colors ${
                 active
-                  ? "bg-blue-50 text-blue-700"
+                  ? "bg-[var(--accent-50)] text-[var(--accent-700)]"
                   : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               }`}
             >
-              <Icon className={`h-5 w-5 shrink-0 ${active ? "text-blue-700" : "text-slate-400 group-hover:text-slate-600"}`} />
+              <Icon className={`h-5 w-5 shrink-0 ${active ? "text-[var(--accent-700)]" : "text-slate-400 group-hover:text-slate-600"}`} />
               <span className="flex-1">{item.label}</span>
-              {active && <span className="h-2 w-2 rounded-full bg-blue-700" />}
+              {active && <span className="h-2 w-2 rounded-full bg-[var(--accent-500)]" />}
             </Link>
           );
         })}
@@ -214,7 +214,7 @@ function VenueIdentity({ venueName, venueLogoUrl, mobile = false }: { venueName?
       {venueLogoUrl ? (
         <Image src={venueLogoUrl} alt={venueName ?? "Venue logo"} width={size} height={size} className={`${mobile ? "h-[34px] w-[34px]" : "h-[38px] w-[38px]"} shrink-0 rounded-md border border-slate-200 object-cover`} priority={!mobile} />
       ) : (
-        <span className={`${mobile ? "h-[34px] w-[34px]" : "h-[38px] w-[38px]"} flex shrink-0 items-center justify-center rounded-md bg-slate-900 text-xs font-bold text-white`}>
+        <span className={`${mobile ? "h-[34px] w-[34px]" : "h-[38px] w-[38px]"} flex shrink-0 items-center justify-center rounded-md bg-[var(--accent-500)] text-xs font-bold text-white`}>
           {(venueName ?? "TF").slice(0, 2).toUpperCase()}
         </span>
       )}
@@ -359,7 +359,7 @@ export function StaffShell({
         ].map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
-          return <Link key={item.href} href={item.href} className={`flex min-h-16 flex-col items-center justify-center gap-1 text-[10px] font-bold ${active ? "text-blue-700" : "text-slate-500"}`}><Icon className="h-5 w-5" />{item.label}</Link>;
+          return <Link key={item.href} href={item.href} className={`flex min-h-16 flex-col items-center justify-center gap-1 text-[10px] font-bold ${active ? "text-[var(--accent-700)]" : "text-slate-500"}`}><Icon className="h-5 w-5" />{item.label}</Link>;
         })}
       </nav>
 

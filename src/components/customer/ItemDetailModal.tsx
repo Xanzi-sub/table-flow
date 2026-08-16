@@ -164,7 +164,7 @@ export function ItemDetailModal({
                             {formatCurrency(recommendation.price)}
                           </span>
                         </span>
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#171614] text-base text-white">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--accent-500)] text-base text-white">
                           +
                         </span>
                       </button>
@@ -208,7 +208,7 @@ export function ItemDetailModal({
               <button
                 type="button"
                 onClick={handleAdd}
-                className="flex h-[50px] flex-1 items-center justify-center gap-2 rounded-full bg-[#171614] px-5 text-[14px] font-semibold text-white shadow-[0_8px_22px_rgba(0,0,0,0.14)] transition hover:bg-black active:scale-[0.985]"
+                className="flex h-[50px] flex-1 items-center justify-center gap-2 rounded-full bg-[var(--accent-500)] px-5 text-[14px] font-semibold text-white shadow-[0_8px_22px_rgba(23,76,58,0.18)] transition hover:bg-[var(--accent-600)] active:scale-[0.985]"
               >
                 Add to order
                 <span className="text-white/60">·</span>

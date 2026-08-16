@@ -100,7 +100,7 @@ export function NamePrompt({
               type="button"
               onClick={submit}
               disabled={!name.trim()}
-              className="mt-3 flex h-[54px] w-full items-center justify-center gap-2 rounded-[15px] bg-[#171614] text-[14px] font-semibold text-white shadow-[0_8px_22px_rgba(0,0,0,0.12)] transition-all hover:bg-black active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
+              className="mt-3 flex h-[54px] w-full items-center justify-center gap-2 rounded-[15px] bg-[var(--accent-500)] text-[14px] font-semibold text-white shadow-[0_8px_22px_rgba(23,76,58,0.16)] transition-all hover:bg-[var(--accent-600)] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
             >
               Continue
               <svg

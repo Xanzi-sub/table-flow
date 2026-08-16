@@ -142,7 +142,7 @@ export function StaffWebAppBridge({ staffId, venueId }: { staffId: string; venue
         <div className="fixed inset-x-4 bottom-20 z-[85] mx-auto max-w-md rounded-lg border border-slate-200 bg-white p-4 shadow-2xl sm:bottom-5">
           <button onClick={dismissInstall} aria-label="Dismiss install prompt" className="absolute right-3 top-3 text-slate-400"><X className="h-4 w-4" /></button>
           <div className="flex gap-3 pr-5">
-            <Download className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+            <Download className="mt-0.5 h-5 w-5 shrink-0 text-[var(--accent-500)]" />
             <div>
               <p className="text-sm font-bold text-slate-900">Install TableFlow</p>
               <p className="mt-1 text-xs leading-5 text-slate-600">
@@ -157,9 +157,9 @@ export function StaffWebAppBridge({ staffId, venueId }: { staffId: string; venue
       )}
 
       {showPushPrompt && !showInstall && !showIosHelp && (
-        <div className="fixed inset-x-4 bottom-20 z-[84] mx-auto max-w-md rounded-lg border border-blue-200 bg-white p-4 shadow-xl sm:bottom-5">
+        <div className="fixed inset-x-4 bottom-20 z-[84] mx-auto max-w-md rounded-lg border border-[var(--accent-200)] bg-white p-4 shadow-xl sm:bottom-5">
           <div className="flex gap-3">
-            <MonitorSmartphone className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+            <MonitorSmartphone className="mt-0.5 h-5 w-5 shrink-0 text-[var(--accent-500)]" />
             <div>
               <p className="text-sm font-bold text-slate-900">Enable browser alerts</p>
               <p className="mt-1 text-xs leading-5 text-slate-600">Receive new-order and customer-request notifications on this computer or phone, even when TableFlow is in the background.</p>

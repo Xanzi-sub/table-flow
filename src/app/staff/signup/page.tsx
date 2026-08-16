@@ -62,7 +62,7 @@ function StaffSignupForm() {
     >
       <form
         onSubmit={handleSubmit}
-        className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 p-8 shadow-xl lg:p-10"
+        className="w-full rounded-2xl border border-[#326750] bg-[#103d2e] p-8 shadow-xl lg:p-10"
       >
         {error && (
           <p className="mt-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-400">
@@ -83,7 +83,7 @@ function StaffSignupForm() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-neutral-700 bg-neutral-800 px-4 py-3 text-sm text-white"
+              className="mt-1 w-full rounded-xl border border-[#41735f] bg-[#174c3a] px-4 py-3 text-sm text-white"
             />
           </label>
           <label className="text-sm text-neutral-300">
@@ -94,7 +94,7 @@ function StaffSignupForm() {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-neutral-700 bg-neutral-800 px-4 py-3 text-sm text-white"
+              className="mt-1 w-full rounded-xl border border-[#41735f] bg-[#174c3a] px-4 py-3 text-sm text-white"
             />
           </label>
         </div>
@@ -102,7 +102,7 @@ function StaffSignupForm() {
         <button
           type="submit"
           disabled={loading || !!success}
-          className="mt-6 w-full rounded-xl bg-white py-3 text-sm font-semibold text-neutral-900 disabled:opacity-50"
+          className="mt-6 w-full rounded-xl bg-[#cdeb69] py-3 text-sm font-semibold text-[#0c3327] hover:bg-[#d8f27f] disabled:opacity-50"
         >
           {loading ? "Activating…" : "Activate Account"}
         </button>

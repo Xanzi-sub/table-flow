@@ -140,9 +140,9 @@ export function NativePushBridge({ staffId, venueId }: { staffId: string; venueI
 
   if (!showPermission) return null;
   return (
-    <div className="fixed inset-x-4 bottom-20 z-[80] mx-auto max-w-md rounded-lg border border-blue-200 bg-white p-4 shadow-xl">
+    <div className="fixed inset-x-4 bottom-20 z-[80] mx-auto max-w-md rounded-lg border border-[var(--accent-200)] bg-white p-4 shadow-xl">
       <div className="flex gap-3">
-        <Smartphone className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+        <Smartphone className="mt-0.5 h-5 w-5 shrink-0 text-[var(--accent-500)]" />
         <div>
           <p className="text-sm font-bold text-slate-900">Enable staff alerts</p>
           <p className="mt-1 text-xs leading-5 text-slate-600">Stay on top of new orders and customer requests even when TableFlow isn&apos;t open.</p>
@@ -254,7 +254,7 @@ export function StaffNotificationCentre({
           {open && (
             <div className="fixed inset-x-3 top-[70px] z-[65] max-h-[70vh] overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-11 sm:w-[380px]">
               <NotificationList notifications={list} unread={unread} soundEnabled={soundEnabled} onRead={markRead} onMarkAll={markAllRead} onToggleSound={toggleSound} />
-              <button onClick={() => { setOpen(false); router.push("/staff/notifications"); }} className="w-full border-t border-slate-200 px-4 py-3 text-xs font-bold text-blue-700 hover:bg-slate-50">View all notifications</button>
+              <button onClick={() => { setOpen(false); router.push("/staff/notifications"); }} className="w-full border-t border-slate-200 px-4 py-3 text-xs font-bold text-[var(--accent-700)] hover:bg-slate-50">View all notifications</button>
             </div>
           )}
         </div>
@@ -278,13 +278,13 @@ function NotificationList({ notifications, unread, soundEnabled, onRead, onMarkA
   return (
     <>
       <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-        <div className="flex items-center gap-2"><BellRing className="h-4 w-4 text-blue-600" /><p className="text-sm font-bold">Notifications</p>{unread > 0 && <span className="badge badge-accent">{unread} unread</span>}</div>
-        <div className="flex gap-2"><button onClick={onToggleSound} className="text-[11px] font-semibold text-slate-500">Sound {soundEnabled ? "on" : "off"}</button>{unread > 0 && <button onClick={onMarkAll} title="Mark all read" className="text-blue-700"><CheckCheck className="h-4 w-4" /></button>}</div>
+        <div className="flex items-center gap-2"><BellRing className="h-4 w-4 text-[var(--accent-500)]" /><p className="text-sm font-bold">Notifications</p>{unread > 0 && <span className="badge badge-accent">{unread} unread</span>}</div>
+        <div className="flex gap-2"><button onClick={onToggleSound} className="text-[11px] font-semibold text-slate-500">Sound {soundEnabled ? "on" : "off"}</button>{unread > 0 && <button onClick={onMarkAll} title="Mark all read" className="text-[var(--accent-700)]"><CheckCheck className="h-4 w-4" /></button>}</div>
       </div>
       <div className="divide-y divide-slate-100">
         {notifications.map((notification) => (
-          <button key={notification.id} onClick={() => onRead(notification)} className={`block w-full px-4 py-3 text-left hover:bg-slate-50 ${notification.read_at ? "bg-white" : "bg-blue-50/60"}`}>
-            <div className="flex items-start gap-3"><span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${notification.read_at ? "bg-slate-300" : "bg-blue-600"}`} /><div className="min-w-0"><p className="text-sm font-bold text-slate-900">{notification.title}</p><p className="mt-1 text-xs leading-5 text-slate-600">{notification.body}</p><p className="mt-1 text-[10px] text-slate-400">{formatDateTime(notification.created_at)}</p></div></div>
+          <button key={notification.id} onClick={() => onRead(notification)} className={`block w-full px-4 py-3 text-left hover:bg-slate-50 ${notification.read_at ? "bg-white" : "bg-[var(--accent-50)]"}`}>
+            <div className="flex items-start gap-3"><span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${notification.read_at ? "bg-slate-300" : "bg-[var(--accent-500)]"}`} /><div className="min-w-0"><p className="text-sm font-bold text-slate-900">{notification.title}</p><p className="mt-1 text-xs leading-5 text-slate-600">{notification.body}</p><p className="mt-1 text-[10px] text-slate-400">{formatDateTime(notification.created_at)}</p></div></div>
           </button>
         ))}
         {notifications.length === 0 && <p className="px-4 py-10 text-center text-sm text-slate-500">No notifications yet.</p>}

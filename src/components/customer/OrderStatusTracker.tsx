@@ -421,7 +421,7 @@ export function OrderStatusTracker({
               </div>
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#eeeae4]">
                 <div
-                  className="h-full rounded-full bg-[#171614] transition-[width] duration-500"
+                  className="h-full rounded-full bg-[var(--accent-500)] transition-[width] duration-500"
                   style={{ width: `${loyaltyProgress}%` }}
                 />
               </div>
@@ -452,7 +452,7 @@ export function OrderStatusTracker({
               <button onClick={handleCallWaiter} disabled={callingWaiter} className="rounded-[13px] border border-[#171614] bg-white px-3 py-3 text-[13px] font-semibold text-[#171614] disabled:opacity-50">
                 {callingWaiter ? "Waiter called ✓" : "Call Waiter"}
               </button>
-              <button onClick={handleBillRequest} disabled={requested} className="rounded-[13px] bg-[#171614] px-3 py-3 text-[13px] font-semibold text-white disabled:opacity-50">
+              <button onClick={handleBillRequest} disabled={requested} className="rounded-[13px] bg-[var(--accent-500)] px-3 py-3 text-[13px] font-semibold text-white hover:bg-[var(--accent-600)] disabled:opacity-50">
                 {requested ? "Bill requested ✓" : "Request Bill"}
               </button>
             </div>

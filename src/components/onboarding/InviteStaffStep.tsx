@@ -70,7 +70,7 @@ export function InviteStaffStep({
 
   return (
     <AuthLayout eyebrow={stepLabel} title={title} description={description} panelClassName="max-w-md lg:max-w-2xl">
-      <div className="w-full rounded-2xl border border-neutral-800 bg-neutral-900 p-8 shadow-xl lg:p-10">
+      <div className="w-full rounded-2xl border border-[#326750] bg-[#103d2e] p-8 shadow-xl lg:p-10">
         {error && (
           <p className="mb-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-400">
             {error}
@@ -82,20 +82,20 @@ export function InviteStaffStep({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Full name"
-            className="rounded-xl border border-neutral-700 bg-neutral-800 px-3 py-2.5 text-sm text-white"
+            className="rounded-xl border border-[#41735f] bg-[#174c3a] px-3 py-2.5 text-sm text-white"
           />
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"
-            className="rounded-xl border border-neutral-700 bg-neutral-800 px-3 py-2.5 text-sm text-white"
+            className="rounded-xl border border-[#41735f] bg-[#174c3a] px-3 py-2.5 text-sm text-white"
           />
           <input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="Phone"
-            className="rounded-xl border border-neutral-700 bg-neutral-800 px-3 py-2.5 text-sm text-white"
+            className="rounded-xl border border-[#41735f] bg-[#174c3a] px-3 py-2.5 text-sm text-white"
           />
         </div>
         <button
@@ -106,7 +106,7 @@ export function InviteStaffStep({
           + Add
         </button>
 
-        <div className="mt-5 flex flex-col divide-y divide-neutral-800">
+        <div className="mt-5 flex flex-col divide-y divide-[#326750]">
           {invites.map((invite) => (
             <div key={invite.id} className="flex items-center justify-between py-2">
               <div>
@@ -138,7 +138,7 @@ export function InviteStaffStep({
             router.push(nextHref);
             router.refresh();
           }}
-          className="mt-6 w-full rounded-xl bg-white py-3 text-sm font-semibold text-neutral-900"
+          className="mt-6 w-full rounded-xl bg-[#cdeb69] py-3 text-sm font-semibold text-[#0c3327] hover:bg-[#d8f27f]"
         >
           {nextLabel}
         </button>

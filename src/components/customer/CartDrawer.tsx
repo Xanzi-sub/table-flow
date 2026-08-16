@@ -169,7 +169,7 @@ export function CartDrawer({
               <button
                 type="button"
                 onClick={onClose}
-                className="mt-6 rounded-full bg-[#171614] px-6 py-3 text-[13px] font-semibold text-white"
+                className="mt-6 rounded-full bg-[var(--accent-500)] px-6 py-3 text-[13px] font-semibold text-white"
               >
                 Browse menu
               </button>
@@ -383,7 +383,7 @@ export function CartDrawer({
                   type="button"
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="mt-4 flex h-[54px] w-full items-center justify-center gap-2 rounded-full bg-[#171614] text-[14px] font-semibold text-white shadow-[0_8px_22px_rgba(0,0,0,0.14)] transition hover:bg-black active:scale-[0.985] disabled:cursor-wait disabled:opacity-60"
+                  className="mt-4 flex h-[54px] w-full items-center justify-center gap-2 rounded-full bg-[var(--accent-500)] text-[14px] font-semibold text-white shadow-[0_8px_22px_rgba(23,76,58,0.18)] transition hover:bg-[var(--accent-600)] active:scale-[0.985] disabled:cursor-wait disabled:opacity-60"
                 >
                   {submitting ? (
                     <>

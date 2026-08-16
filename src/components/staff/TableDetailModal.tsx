@@ -304,7 +304,7 @@ function OrderCard({
           <button
             onClick={handleAdvance}
             disabled={updating}
-            className="h-8 bg-[#171A20] px-3.5 text-[9px] font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-8 bg-[var(--accent-500)] px-3.5 text-[9px] font-semibold text-white transition-opacity hover:bg-[var(--accent-600)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {updating
               ? "Updating..."

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { saveVenueSettings } from "@/app/actions/onboarding";
 import { getWhatsAppConnectUrl, syncZendioWhatsAppAccount } from "@/app/actions/zendio";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { SupportTicketSection } from "@/components/admin/SupportTicketSection";
 import type { VenueSettings } from "@/types/database";
 
 export function SettingsManager({ venue }: { venue: VenueSettings | null }) {
@@ -264,6 +265,8 @@ export function SettingsManager({ venue }: { venue: VenueSettings | null }) {
             </div>
           </div>
         </div>
+
+        <SupportTicketSection />
       </div>
     </div>
   );

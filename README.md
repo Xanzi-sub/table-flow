@@ -18,6 +18,8 @@ GEMINI_VISION_MODEL=gemini-3.6-flash
 
 ZENDIO_API_KEY=                      # Zernio/Zendio WhatsApp Business API key (Settings → API Keys)
 ZENDIO_RECEIPT_TEMPLATE=             # optional: approved WhatsApp template name for receipts
+
+SUPPORT_API_KEY=                     # random server-only bearer key for the external support app
 ```
 
 The `GEMINI_*` and `ZENDIO_*` values are only consumed by the Supabase Edge
@@ -110,6 +112,26 @@ npm run dev
   `/staff/assign-table/[qr_identifier]` first, or insert one directly in SQL)
 - `/q/[qr_identifier]` — the URL encoded on the physical table sticker; resolved by
   `src/middleware.ts` to either the staff assign-table flow or the customer menu
+
+## Support app integration
+
+Managers and admins create and follow tickets in `/admin/settings`. The external
+support app calls `/api/support/tickets` with
+`Authorization: Bearer <SUPPORT_API_KEY>`. It may also send
+`X-Support-Agent-Id` and `X-Support-Agent-Name` headers for assignment and audit
+attribution.
+
+- `GET /api/support/tickets` lists tickets with messages and audit events.
+- `GET /api/support/tickets?ticketId=<uuid>` gets one complete ticket.
+- `GET /api/support/tickets?since=<ISO timestamp>&status=open,in_progress` supports incremental polling.
+- `POST { "action": "reply", "ticketId": "<uuid>", "message": "...", "isInternal": false }` adds a support reply.
+- `PATCH { "ticketId": "<uuid>", "status": "resolved", "resolutionSummary": "..." }` updates workflow state.
+- The same `PATCH` accepts `priority`, `externalAssigneeId`,
+  `externalAssigneeName`, and `externalReference`.
+
+Supported statuses are `open`, `in_progress`, `waiting_on_venue`, `resolved`,
+and `closed`. Internal support replies and service-role database access are
+never exposed to the venue browser.
 
 ## Project structure
 

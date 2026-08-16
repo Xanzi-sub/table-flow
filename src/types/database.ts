@@ -76,6 +76,55 @@ export interface OrderFeedback {
   resolved_by: string | null;
 }
 
+export type SupportTicketCategory = "technical" | "billing" | "menu" | "orders" | "payments" | "whatsapp" | "account" | "other";
+export type SupportTicketPriority = "low" | "normal" | "high" | "urgent";
+export type SupportTicketStatus = "open" | "in_progress" | "waiting_on_venue" | "resolved" | "closed";
+
+export interface SupportTicket {
+  id: string;
+  ticket_number: string;
+  venue_id: string | null;
+  venue_name: string;
+  subject: string;
+  description: string;
+  category: SupportTicketCategory;
+  priority: SupportTicketPriority;
+  status: SupportTicketStatus;
+  created_by: string | null;
+  external_assignee_id: string | null;
+  external_assignee_name: string | null;
+  external_reference: string | null;
+  resolution_summary: string | null;
+  last_reply_at: string | null;
+  resolved_at: string | null;
+  closed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SupportTicketMessage {
+  id: string;
+  ticket_id: string;
+  author_type: "venue" | "support" | "system";
+  author_staff_id: string | null;
+  author_name: string;
+  body: string;
+  is_internal: boolean;
+  created_at: string;
+}
+
+export interface SupportTicketEvent {
+  id: string;
+  ticket_id: string;
+  event_type: string;
+  actor_type: "venue" | "support" | "system";
+  actor_id: string | null;
+  actor_name: string | null;
+  old_value: string | null;
+  new_value: string | null;
+  created_at: string;
+}
+
 export interface StaffInvite {
   id: string;
   email: string;
@@ -243,6 +292,9 @@ export interface Database {
       marketing_campaigns: { Row: MarketingCampaign; Insert: Partial<MarketingCampaign> & { title: string; message_body: string }; Update: Partial<MarketingCampaign>; Relationships: [] };
       loyalty_ledger: { Row: LoyaltyLedgerEntry; Insert: Partial<LoyaltyLedgerEntry> & { customer_id: string; points: number }; Update: Partial<LoyaltyLedgerEntry>; Relationships: [] };
       order_feedback: { Row: OrderFeedback; Insert: Partial<OrderFeedback> & { order_id: string; customer_id: string; rating: number }; Update: Partial<OrderFeedback>; Relationships: [] };
+      support_tickets: { Row: SupportTicket; Insert: Partial<SupportTicket> & { venue_name: string; subject: string; description: string; category: SupportTicketCategory; created_by: string }; Update: Partial<SupportTicket>; Relationships: [] };
+      support_ticket_messages: { Row: SupportTicketMessage; Insert: Partial<SupportTicketMessage> & { ticket_id: string; author_type: SupportTicketMessage["author_type"]; author_name: string; body: string }; Update: Partial<SupportTicketMessage>; Relationships: [] };
+      support_ticket_events: { Row: SupportTicketEvent; Insert: Partial<SupportTicketEvent> & { ticket_id: string; event_type: string; actor_type: SupportTicketEvent["actor_type"] }; Update: Partial<SupportTicketEvent>; Relationships: [] };
       tip_cashout_requests: { Row: TipCashoutRequest; Insert: Partial<TipCashoutRequest> & { waiter_id: string; amount: number }; Update: Partial<TipCashoutRequest>; Relationships: [] };
       venue_settings: { Row: VenueSettings; Insert: Partial<VenueSettings> & { name: string }; Update: Partial<VenueSettings>; Relationships: [] };
       staff_invites: { Row: StaffInvite; Insert: Partial<StaffInvite> & { email: string; full_name: string }; Update: Partial<StaffInvite>; Relationships: [] };

@@ -80,11 +80,11 @@ export function ActiveAlertSilencer() {
       <div className="flex items-center gap-3">
         <span className="h-3 w-3 animate-pulse rounded-full bg-red-600" />
         <div>
-          <p className="text-sm font-bold text-slate-900">Staff alert ringing</p>
-          <p className="mt-0.5 text-xs text-slate-500">Open the alert to handle it, or silence the sound now.</p>
+          <p className="text-sm font-bold text-slate-900">Action required</p>
+          <p className="mt-0.5 text-xs text-slate-500">Open the notification to handle it, or acknowledge the alert now.</p>
         </div>
       </div>
-      <button type="button" onClick={stopAlertSound} className="btn btn-danger shrink-0">Stop sound</button>
+      <button type="button" onClick={stopAlertSound} className="btn btn-danger shrink-0">Acknowledge alert</button>
     </div>
   );
 }

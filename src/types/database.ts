@@ -84,6 +84,13 @@ export interface CustomerNotification {
   created_at: string;
 }
 
+export interface CustomerRecoveryResult {
+  customer_id: string;
+  full_name: string | null;
+  loyalty_points: number;
+  recovered: boolean;
+}
+
 export interface StaffProfile {
   id: string;
   full_name: string;
@@ -403,6 +410,15 @@ export interface Database {
       register_customer_device: {
         Args: { p_push_token: string; p_device_identifier: string };
         Returns: CustomerDevice;
+      };
+      recover_customer_device: {
+        Args: {
+          p_device_id: string;
+          p_recovery_secret: string;
+          p_full_name?: string | null;
+          p_legacy_customer_id?: string | null;
+        };
+        Returns: CustomerRecoveryResult;
       };
       get_table_waiter_name: { Args: { p_table_id: string }; Returns: string | null };
       mark_order_paid_with_loyalty: {

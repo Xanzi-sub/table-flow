@@ -29,6 +29,20 @@ import {
 
 const FINGERPRINT_KEY = "tf_customer_id";
 const NAME_KEY = "tf_customer_name";
+const RECOVERY_SECRET_KEY = "tf_customer_recovery_secret";
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function deviceCredentials() {
+  const legacyId = localStorage.getItem(FINGERPRINT_KEY);
+  const deviceId = legacyId && UUID_PATTERN.test(legacyId) ? legacyId : crypto.randomUUID();
+  let secret = localStorage.getItem(RECOVERY_SECRET_KEY);
+  if (!secret) {
+    secret = Array.from(crypto.getRandomValues(new Uint8Array(32)), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  }
+  localStorage.setItem(FINGERPRINT_KEY, deviceId);
+  localStorage.setItem(RECOVERY_SECRET_KEY, secret);
+  return { deviceId, secret, legacyCustomerId: legacyId && UUID_PATTERN.test(legacyId) ? legacyId : null };
+}
 
 interface CustomerMenuAppProps {
   table: TableRow;
@@ -568,12 +582,13 @@ function MenuAppContent({
 
       try {
         const {
-          data: { session },
-        } = await supabase.auth.getSession();
+          data: { user: existingUser },
+        } = await supabase.auth.getUser();
 
-        let userId = session?.user?.id ?? null;
+        let userId = existingUser?.id ?? null;
 
         if (!userId) {
+          await supabase.auth.signOut().catch(() => {});
           const { data, error } =
             await supabase.auth.signInAnonymously();
 
@@ -589,35 +604,48 @@ function MenuAppContent({
 
           userId = data.user.id;
         }
-
-        localStorage.setItem(FINGERPRINT_KEY, userId);
-
+        const credentials = deviceCredentials();
         const cachedName = localStorage.getItem(NAME_KEY);
 
-        const [{ data: pastOrders }, { data: customerProfile }] = await Promise.all([
-          supabase
-            .from("orders")
-            .select("id")
-            .eq("customer_session_id", userId)
-            .order("created_at", { ascending: false }),
-          supabase.from("customer_profiles").select("loyalty_points").eq("id", userId).maybeSingle(),
-        ]);
+        const { data: recovered, error: recoveryError } = await supabase.rpc("recover_customer_device", {
+          p_device_id: credentials.deviceId,
+          p_recovery_secret: credentials.secret,
+          p_full_name: cachedName,
+          p_legacy_customer_id: credentials.legacyCustomerId,
+        });
+        if (recoveryError || !recovered) {
+          setSessionError("We couldn't restore your customer profile. Please refresh and try again.");
+          return;
+        }
+        const profile = recovered as {
+          customer_id: string;
+          full_name: string | null;
+          loyalty_points: number;
+        };
+
+        const { data: pastOrders } = await supabase
+          .from("orders")
+          .select("id")
+          .eq("customer_session_id", userId)
+          .order("created_at", { ascending: false });
 
         if (pastOrders) {
           setOrderIds(pastOrders.map((order) => order.id));
         }
-        setLoyaltyPoints(customerProfile?.loyalty_points ?? 0);
+        setLoyaltyPoints(profile.loyalty_points ?? 0);
 
-        if (cachedName) {
+        const recoveredName = profile.full_name?.trim() || cachedName?.trim() || "";
+        if (recoveredName) {
+          localStorage.setItem(NAME_KEY, recoveredName);
           setIdentity({
             userId,
-            customerId: userId,
-            name: cachedName,
+            customerId: profile.customer_id,
+            name: recoveredName,
           });
         } else {
           setIdentity({
             userId,
-            customerId: userId,
+            customerId: profile.customer_id,
             name: "",
           });
 
@@ -642,17 +670,23 @@ function MenuAppContent({
 
     if (!cleanName) return;
 
-    localStorage.setItem(NAME_KEY, cleanName);
-
     const supabase = createClient();
-
-    await supabase.from("customer_profiles").upsert({
-      id: identity.userId,
-      full_name: cleanName,
+    const credentials = deviceCredentials();
+    const { data: recovered, error } = await supabase.rpc("recover_customer_device", {
+      p_device_id: credentials.deviceId,
+      p_recovery_secret: credentials.secret,
+      p_full_name: cleanName,
+      p_legacy_customer_id: credentials.legacyCustomerId,
     });
+    if (error || !recovered) {
+      setSessionError("We couldn't save your name. Please try again.");
+      return;
+    }
+    localStorage.setItem(NAME_KEY, cleanName);
 
     setIdentity({
       ...identity,
+      customerId: identity.userId,
       name: cleanName,
     });
 

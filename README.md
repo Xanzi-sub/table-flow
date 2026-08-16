@@ -61,7 +61,7 @@ supabase link --project-ref <your-project-ref>
 supabase db push
 ```
 
-This applies all migrations through `0033_customer_notifications.sql`. The migration
+This applies all migrations through `0034_customer_device_identity.sql`. The migration
 history covers the core schema and storage, onboarding and staff invites,
 category groups, Zernio account data, waiter scoping and assignment, tips and
 service requests, loyalty and feedback, menu specials and quantity deals,
@@ -69,7 +69,7 @@ order-scoped payments, loyalty redemption, support tickets, persistent rate
 limiting, financial constraints, service-request ownership, storage security,
 native/web staff devices, persistent notifications, manager alert fan-out,
 waiter self-claim, safe historical assignment repair, customer order-status
-notifications and duplicate-safe retries.
+notifications, durable device-bound customer recovery and duplicate-safe retries.
 
 Do not skip older migrations on a fresh project. Supabase records which files
 have already been applied and only runs the missing migrations.
@@ -173,7 +173,7 @@ src/
   app/admin/                 # venue operations, CRM, menu, intelligence, staff and settings
   components/                # customer/staff/admin/onboarding UI split by surface
 supabase/
-  migrations/                # schema, RLS, triggers and RPCs through migration 0033
+  migrations/                # schema, RLS, triggers and RPCs through migration 0034
   functions/                 # AI extraction, WhatsApp campaigns, receipts and OTP
 ```
 

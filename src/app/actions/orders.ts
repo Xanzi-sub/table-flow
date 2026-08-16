@@ -73,6 +73,17 @@ export async function submitOrder(input: {
   if (!user || input.customerSessionId !== user.id) {
     return { success: false, error: "Your ordering session has expired." };
   }
+  if (input.customerId && input.customerId !== user.id) {
+    return { success: false, error: "Your customer session changed. Please refresh before ordering." };
+  }
+  const { data: customerProfile } = await supabase
+    .from("customer_profiles")
+    .select("id")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (!customerProfile) {
+    return { success: false, error: "Please confirm your name before placing an order." };
+  }
   const { data: existingOrder } = await supabase
     .from("orders")
     .select("id, total_amount, loyalty_points_redeemed, loyalty_discount_amount")
@@ -107,7 +118,7 @@ export async function submitOrder(input: {
     .from("menu_specials")
     .select("*")
     .eq("status", "live");
-  if (specialsError) return { success: false, error: specialsError.message };
+  if (specialsError) return { success: false, error: "We couldn't load current offers. Please refresh and try again." };
 
   const activeSpecials = (activeSpecialRows ?? []) as MenuSpecial[];
   const requestedSpecialIds = new Set(input.items.map((line) => line.specialId).filter(Boolean));
@@ -123,7 +134,7 @@ export async function submitOrder(input: {
     .select("*")
     .in("id", [...requestedMenuItemIds])
     .eq("status", "live");
-  if (menuItemsError) return { success: false, error: menuItemsError.message };
+  if (menuItemsError) return { success: false, error: "We couldn't verify the menu. Please refresh and try again." };
   const menuItemMap = new Map(((menuItemRows ?? []) as MenuItem[]).map((item) => [item.id, item]));
   const specialMap = new Map(activeSpecials.map((special) => [special.id, special]));
   const pricedLines: PricedOrderLine[] = [];
@@ -213,7 +224,7 @@ export async function submitOrder(input: {
       table_id: input.tableId,
       client_request_id: input.requestId,
       customer_session_id: input.customerSessionId,
-      customer_id: input.customerId ?? null,
+      customer_id: user.id,
       total_amount: totalAmount,
       status: "pending",
       payment_status: "unpaid",
@@ -222,7 +233,7 @@ export async function submitOrder(input: {
     .single();
 
   if (orderError || !order) {
-    return { success: false, error: orderError?.message ?? "Could not create order" };
+    return { success: false, error: "We couldn't place your order. Please check your connection and try again." };
   }
 
   const { error: itemsError } = await supabase.from("order_items").insert(
@@ -234,7 +245,7 @@ export async function submitOrder(input: {
 
   if (itemsError) {
     await createAdminClient().from("orders").delete().eq("id", order.id);
-    return { success: false, error: itemsError.message };
+    return { success: false, error: "We couldn't save all items in your order. Please try again." };
   }
 
   let loyaltyDiscount = 0;
@@ -247,7 +258,7 @@ export async function submitOrder(input: {
     });
     if (redemptionError) {
       await createAdminClient().from("orders").delete().eq("id", order.id);
-      return { success: false, error: redemptionError.message };
+      return { success: false, error: "Your loyalty reward could not be applied. Your points were not lost." };
     }
     loyaltyDiscount = Number(discount ?? 0);
     loyaltyPointsRedeemed = points;
@@ -317,7 +328,7 @@ export async function requestTableAssistance(
     p_request_type: requestType,
   });
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: "We couldn't notify the restaurant. Please ask a staff member for help." };
   const { data: request } = await supabase.from("table_service_requests").select("order_id").eq("id", requestId).single();
   if (request?.order_id) {
     after(async () => {

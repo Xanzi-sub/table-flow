@@ -55,7 +55,7 @@ export async function submitOrderFeedback(input: {
     { onConflict: "order_id" }
   );
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: "We couldn't save your feedback. Please try again." };
   revalidatePath("/admin/analytics");
   return { success: true };
 }

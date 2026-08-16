@@ -217,12 +217,18 @@ public landing page uses the TableFlow green brand direction and larger logo.
   manifest. Anonymous customers can install it and register their browser for
   persistent order-status notifications, background Web Push and foreground
   sound when an order becomes preparing, served, completed or cancelled.
+- **Customer recovery:** a random device ID and separate recovery secret bind
+  the installed/browser device to its customer profile. If Supabase replaces
+  an expired anonymous session, a secured RPC migrates profile, loyalty,
+  history, feedback and notifications to the new auth identity before ordering
+  is enabled. Clearing all browser storage still starts a genuinely fresh guest
+  because no secure recovery proof remains.
 - **Floor request source:** active `table_service_requests` rows—not the lossy
   table status alone—drive waiter-call and bill-request badges, panels and
   drawer details. Realtime plus polling keeps them visible until resolved.
 - **Checkout resilience:** every cart submission has a stable idempotency key,
   so an interrupted response can be retried without creating a duplicate order.
-- **Database:** migrations currently run through `0033_customer_notifications.sql`.
+- **Database:** migrations currently run through `0034_customer_device_identity.sql`.
 
 See [README.md](README.md) for installation, environment variables, migrations,
 Edge Function deployment, routes and external support API examples.

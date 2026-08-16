@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { createClient } from "@/lib/supabase/client";
 import { formatCurrency, formatDateTime, formatStaffName } from "@/lib/utils";
 import type { TipCashoutStatus } from "@/types/database";
+import type { VenueTipSummary } from "@/app/actions/tips";
 
 const STATUS_BADGE: Record<TipCashoutStatus, string> = {
   pending: "badge-warning",
@@ -139,8 +140,15 @@ function ResolvePanel({
   );
 }
 
-export function TipsCashoutManager({ initialRequests }: { initialRequests: CashoutRequestRow[] }) {
+export function TipsCashoutManager({
+  initialRequests,
+  initialSummary,
+}: {
+  initialRequests: CashoutRequestRow[];
+  initialSummary: VenueTipSummary;
+}) {
   const [requests, setRequests] = useState(initialRequests);
+  const [summary, setSummary] = useState(initialSummary);
   const [resolving, setResolving] = useState<CashoutRequestRow | null>(null);
 
   useEffect(() => {
@@ -149,8 +157,9 @@ export function TipsCashoutManager({ initialRequests }: { initialRequests: Casho
       try {
         const response = await fetch("/api/tips/cashouts", { cache: "no-store" });
         if (!response.ok) return;
-        const latest = (await response.json()) as CashoutRequestRow[];
-        setRequests(latest);
+        const latest = (await response.json()) as { requests: CashoutRequestRow[]; summary: VenueTipSummary };
+        setRequests(latest.requests);
+        setSummary(latest.summary);
       } catch {
         // Keep current data and retry on the next realtime/fallback cycle.
       }
@@ -158,6 +167,7 @@ export function TipsCashoutManager({ initialRequests }: { initialRequests: Casho
     const channel = supabase
       .channel("admin-tip-cashouts")
       .on("postgres_changes", { event: "*", schema: "public", table: "tip_cashout_requests" }, refresh)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders" }, refresh)
       .subscribe((status) => {
         if (status === "SUBSCRIBED") void refresh();
       });
@@ -182,6 +192,50 @@ export function TipsCashoutManager({ initialRequests }: { initialRequests: Casho
         title="Tips Cash-outs"
         description={`${requests.length} requests · ${formatCurrency(pendingTotal)} pending/scheduled`}
       />
+
+      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="stat-card">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--foreground-muted)]">All recorded tips</p>
+          <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">{formatCurrency(summary.totalTips)}</p>
+        </div>
+        <div className="stat-card">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--foreground-muted)]">Assigned to waiters</p>
+          <p className="mt-1 text-2xl font-bold text-[var(--success-600)]">{formatCurrency(summary.waiterAttributedTips)}</p>
+        </div>
+        <div className="stat-card">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--foreground-muted)]">Unassigned / venue tips</p>
+          <p className="mt-1 text-2xl font-bold text-[var(--foreground)]">{formatCurrency(summary.unassignedTips)}</p>
+          <p className="mt-1 text-xs text-[var(--foreground-muted)]">Visible here, not allocated to a waiter.</p>
+        </div>
+      </div>
+
+      {summary.unassignedOrders.length > 0 && (
+        <div className="card mb-6 overflow-x-auto p-0">
+          <div className="border-b border-[var(--border)] px-4 py-3">
+            <h2 className="text-sm font-bold text-[var(--foreground)]">Unassigned tip activity</h2>
+          </div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[var(--border)] text-left text-xs font-semibold uppercase tracking-wide text-[var(--foreground-muted)]">
+                <th className="px-4 py-3">Paid</th>
+                <th className="px-4 py-3">Order</th>
+                <th className="px-4 py-3">Method</th>
+                <th className="px-4 py-3">Tip</th>
+              </tr>
+            </thead>
+            <tbody>
+              {summary.unassignedOrders.map((order) => (
+                <tr key={order.id} className="border-b border-[var(--border)] last:border-0">
+                  <td className="px-4 py-3 text-xs text-[var(--foreground-muted)]">{formatDateTime(order.createdAt)}</td>
+                  <td className="px-4 py-3 font-medium text-[var(--foreground)]">{order.id.slice(0, 8).toUpperCase()}</td>
+                  <td className="px-4 py-3 capitalize text-[var(--foreground-muted)]">{order.paymentMethod?.replace("_", " ") ?? "Unknown"}</td>
+                  <td className="px-4 py-3 font-semibold text-[var(--foreground)]">{formatCurrency(order.tipAmount)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <div className="card overflow-x-auto p-0">
         <table className="w-full text-sm">

@@ -114,10 +114,10 @@ export async function submitOrder(input: {
       error: error instanceof RateLimitError ? error.message : "Ordering is temporarily unavailable",
     };
   }
-  const { data: activeSpecialRows, error: specialsError } = await supabase
-    .from("menu_specials")
-    .select("*")
-    .eq("status", "live");
+  const [{ data: activeSpecialRows, error: specialsError }, { data: venue }] = await Promise.all([
+    supabase.from("menu_specials").select("*").eq("status", "live"),
+    supabase.from("venue_settings").select("vat_percentage").maybeSingle(),
+  ]);
   if (specialsError) return { success: false, error: "We couldn't load current offers. Please refresh and try again." };
 
   const activeSpecials = (activeSpecialRows ?? []) as MenuSpecial[];
@@ -214,9 +214,12 @@ export async function submitOrder(input: {
     });
   }
 
-  const totalAmount = roundMoney(
+  const subtotalAmount = roundMoney(
     pricedLines.reduce((sum, line) => sum + line.unit_price * line.quantity, 0)
   );
+  const vatPercentage = Math.max(0, Math.min(100, Number(venue?.vat_percentage ?? 15)));
+  const vatAmount = roundMoney(subtotalAmount * (vatPercentage / 100));
+  const totalAmount = roundMoney(subtotalAmount + vatAmount);
 
   const { data: order, error: orderError } = await supabase
     .from("orders")
@@ -225,6 +228,9 @@ export async function submitOrder(input: {
       client_request_id: input.requestId,
       customer_session_id: input.customerSessionId,
       customer_id: user.id,
+      subtotal_amount: subtotalAmount,
+      vat_percentage_snapshot: vatPercentage,
+      vat_amount: vatAmount,
       total_amount: totalAmount,
       status: "pending",
       payment_status: "unpaid",

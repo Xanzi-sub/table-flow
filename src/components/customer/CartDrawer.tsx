@@ -14,6 +14,7 @@ interface CartDrawerProps {
   customerSessionId: string;
   customerId: string | null;
   loyaltyPoints: number;
+  vatPercentage: number;
   loyaltyRewardThreshold: number;
   loyaltyRewardValue: number;
   onPointsChanged: (points: number) => void;
@@ -27,6 +28,7 @@ export function CartDrawer({
   customerSessionId,
   customerId,
   loyaltyPoints,
+  vatPercentage,
   loyaltyRewardThreshold,
   loyaltyRewardValue,
   onPointsChanged,
@@ -95,13 +97,15 @@ export function CartDrawer({
     return sum + regularUnit * line.quantity;
   }, 0);
   const savings = Math.max(0, regularAmount - totalAmount);
+  const vatAmount = Math.round(totalAmount * Math.max(0, Math.min(100, vatPercentage)) ) / 100;
+  const grossAmount = Math.round((totalAmount + vatAmount) * 100) / 100;
   const availableRewardUnits =
     loyaltyRewardThreshold > 0 ? Math.floor(loyaltyPoints / loyaltyRewardThreshold) : 0;
   const usableRewardUnits =
-    loyaltyRewardValue > 0 ? Math.min(availableRewardUnits, Math.floor(totalAmount / loyaltyRewardValue)) : 0;
+    loyaltyRewardValue > 0 ? Math.min(availableRewardUnits, Math.floor(grossAmount / loyaltyRewardValue)) : 0;
   const redeemablePoints = usableRewardUnits * loyaltyRewardThreshold;
   const loyaltyDiscount = applyLoyalty ? usableRewardUnits * loyaltyRewardValue : 0;
-  const finalAmount = Math.max(0, totalAmount - loyaltyDiscount);
+  const finalAmount = Math.max(0, grossAmount - loyaltyDiscount);
 
   return (
     <div className="fixed inset-0 z-50 h-dvh overflow-hidden bg-[#171614]/60 backdrop-blur-[5px]">
@@ -335,7 +339,7 @@ export function CartDrawer({
 
                 <div className="flex items-center justify-between text-[13px] text-[#77736d]">
                   <span>Subtotal</span>
-                  <span>{formatCurrency(regularAmount)}</span>
+                  <span>{formatCurrency(totalAmount)}</span>
                 </div>
 
                 {savings > 0 && (
@@ -346,8 +350,8 @@ export function CartDrawer({
                 )}
 
                 <div className="mt-2 flex items-center justify-between text-[13px] text-[#77736d]">
-                  <span>VAT</span>
-                  <span className="text-[#99938a]">Included</span>
+                  <span>VAT ({vatPercentage}%)</span>
+                  <span>{formatCurrency(vatAmount)}</span>
                 </div>
 
                 <label className={`mt-3 flex items-center justify-between gap-3 rounded-[13px] border p-3 ${

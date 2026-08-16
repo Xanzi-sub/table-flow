@@ -124,10 +124,17 @@ function drawReceipt(
   dashed();
   y += 22;
 
-  const grossTotal = order.total_amount + order.loyalty_discount_amount;
-  const vatAmount = grossTotal - grossTotal / (1 + vatPercentage / 100);
-  const subtotal = grossTotal - vatAmount;
-  const suggestedTip = grossTotal * (tipPercentage / 100);
+  const hasVatSnapshot = order.subtotal_amount !== null && order.vat_amount !== null;
+  const effectiveVatPercentage = order.vat_percentage_snapshot ?? vatPercentage;
+  const legacyGrossTotal = order.total_amount + order.loyalty_discount_amount;
+  const subtotal = hasVatSnapshot
+    ? Number(order.subtotal_amount)
+    : legacyGrossTotal / (1 + vatPercentage / 100);
+  const vatAmount = hasVatSnapshot
+    ? Number(order.vat_amount)
+    : legacyGrossTotal - subtotal;
+  const totalBeforeLoyalty = subtotal + vatAmount;
+  const suggestedTip = totalBeforeLoyalty * (tipPercentage / 100);
 
   ctx.font = "500 11px system-ui, -apple-system, sans-serif";
   const row = (label: string, value: string, boldValue = false) => {
@@ -143,7 +150,10 @@ function drawReceipt(
   };
 
   row("Subtotal", formatCurrency(subtotal));
-  row(`VAT (${vatPercentage}%, incl.)`, formatCurrency(vatAmount));
+  row(
+    hasVatSnapshot ? `VAT (${effectiveVatPercentage}%)` : `VAT (${effectiveVatPercentage}%, incl.)`,
+    formatCurrency(vatAmount)
+  );
   if (order.loyalty_discount_amount > 0) {
     row(
       `Loyalty (${order.loyalty_points_redeemed} points)`,

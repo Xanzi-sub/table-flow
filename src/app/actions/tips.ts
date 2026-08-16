@@ -15,6 +15,64 @@ export interface WaiterTipSummary {
   pendingCashoutAmount: number;
 }
 
+export interface VenueTipSummary {
+  totalTips: number;
+  waiterAttributedTips: number;
+  unassignedTips: number;
+  unassignedOrders: Array<{
+    id: string;
+    tipAmount: number;
+    paymentMethod: string | null;
+    createdAt: string;
+  }>;
+}
+
+export async function getVenueTipSummary(): Promise<VenueTipSummary> {
+  const emptySummary: VenueTipSummary = {
+    totalTips: 0,
+    waiterAttributedTips: 0,
+    unassignedTips: 0,
+    unassignedOrders: [],
+  };
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return emptySummary;
+  const { data: profile } = await supabase
+    .from("staff_profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (!profile || profile.role === "waiter") return emptySummary;
+
+  const admin = createAdminClient();
+  const { data: orders } = await admin
+    .from("orders")
+    .select("id, waiter_id, tip_amount, payment_method, created_at")
+    .eq("payment_status", "paid")
+    .gt("tip_amount", 0)
+    .order("created_at", { ascending: false });
+
+  let totalTips = 0;
+  let waiterAttributedTips = 0;
+  const unassignedOrders: VenueTipSummary["unassignedOrders"] = [];
+  for (const order of orders ?? []) {
+    totalTips += Number(order.tip_amount ?? 0);
+    if (order.waiter_id) waiterAttributedTips += Number(order.tip_amount ?? 0);
+    else unassignedOrders.push({
+      id: order.id,
+      tipAmount: Number(order.tip_amount ?? 0),
+      paymentMethod: order.payment_method,
+      createdAt: order.created_at,
+    });
+  }
+  return {
+    totalTips,
+    waiterAttributedTips,
+    unassignedTips: totalTips - waiterAttributedTips,
+    unassignedOrders,
+  };
+}
+
 /** Cash tips are assumed taken directly by the waiter — only card/online tips ever need cashing out. */
 export async function getWaiterTipSummary(waiterId: string): Promise<WaiterTipSummary> {
   const supabase = await createClient();

@@ -40,6 +40,7 @@ export function StaffDashboard({
 }: StaffDashboardProps) {
   const [tables, setTables] = useState(initialTables);
   const [orders, setOrders] = useState(initialOrders);
+  const [liveWaiters, setLiveWaiters] = useState(waiters);
   const [selectedTable, setSelectedTable] = useState<TableRow | null>(null);
   const [filter, setFilter] = useState<FloorFilter>("all");
   const [serviceRequests, setServiceRequests] = useState(initialServiceRequests);
@@ -61,14 +62,16 @@ export function StaffDashboard({
     const supabase = createClient();
 
     async function syncFloor() {
-      const [{ data: latestTables }, { data: latestOrders }, { data: latestRequests }] = await Promise.all([
+      const [{ data: latestTables }, { data: latestOrders }, { data: latestRequests }, { data: latestWaiters }] = await Promise.all([
         supabase.from("tables").select("*").order("table_number"),
         supabase.from("orders").select("*").in("status", ["pending", "preparing", "served"]),
         supabase.from("table_service_requests").select("*").is("resolved_at", null).order("created_at"),
+        supabase.from("staff_profiles").select("id, full_name, is_checked_in").eq("role", "waiter"),
       ]);
       if (latestTables) setTables(latestTables);
       if (latestOrders) setOrders(latestOrders);
       if (latestRequests) setServiceRequests(latestRequests);
+      if (latestWaiters) setLiveWaiters(latestWaiters);
     }
 
     const channel = supabase
@@ -112,6 +115,12 @@ export function StaffDashboard({
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "table_service_requests" },
+        () => void syncFloor()
+      )
+
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "staff_profiles" },
         () => void syncFloor()
       )
 
@@ -515,7 +524,7 @@ export function StaffDashboard({
         <TableDetailModal
           table={selectedTableLive}
           role={profile.role}
-          waiters={waiters}
+          waiters={liveWaiters}
           serviceRequests={serviceRequestsByTable.get(selectedTableLive.id) ?? []}
           onServiceResolved={handleServiceResolved}
           onTableClaimed={handleTableClaimed}

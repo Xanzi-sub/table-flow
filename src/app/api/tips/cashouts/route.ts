@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { enforceRateLimit, RateLimitError, readJsonBody } from "@/lib/security";
 import type { TipCashoutStatus } from "@/types/database";
+import { getVenueTipSummary } from "@/app/actions/tips";
 
 const VALID_STATUSES = new Set<TipCashoutStatus>(["pending", "scheduled", "approved", "rejected"]);
 
@@ -42,12 +43,13 @@ export async function GET() {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   const names = new Map((staff ?? []).map((member) => [member.id, member.full_name]));
 
-  return NextResponse.json(
-    (requests ?? []).map((request) => ({
+  const mappedRequests = (requests ?? []).map((request) => ({
       ...request,
       staff_profiles: { full_name: names.get(request.waiter_id) ?? "Staff member" },
-    }))
-  );
+    }));
+  const summary = await getVenueTipSummary();
+
+  return NextResponse.json({ requests: mappedRequests, summary });
 }
 
 export async function PATCH(request: Request) {

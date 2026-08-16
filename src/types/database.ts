@@ -304,6 +304,9 @@ export interface Order {
   payment_method: PaymentMethod | null;
   customer_session_id: string;
   customer_id: string | null;
+  subtotal_amount: number | null;
+  vat_percentage_snapshot: number | null;
+  vat_amount: number | null;
   total_amount: number;
   tip_amount: number;
   tip_cashout_request_id: string | null;

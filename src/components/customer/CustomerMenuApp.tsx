@@ -871,6 +871,7 @@ function MenuAppContent({
             customerSessionId={identity.userId}
             customerId={identity.customerId}
             loyaltyPoints={loyaltyPoints}
+            vatPercentage={vatPercentage}
             loyaltyRewardThreshold={loyaltyRewardThreshold}
             loyaltyRewardValue={loyaltyRewardValue}
             onPointsChanged={setLoyaltyPoints}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { saveVenueSettings } from "@/app/actions/onboarding";
@@ -30,9 +30,18 @@ export function SettingsManager({ venue }: { venue: VenueSettings | null }) {
   const [accountLabel, setAccountLabel] = useState(venue?.zendio_account_label ?? null);
   const [connecting, setConnecting] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(
-    searchParams.get("whatsapp") === "error" ? "Could not complete the WhatsApp connection. Try again." : null
+    !venue?.zendio_account_id && searchParams.get("whatsapp") === "error"
+      ? "Could not complete the WhatsApp connection. Try again."
+      : null
   );
   const whatsappJustConnected = searchParams.get("whatsapp") === "connected";
+
+  useEffect(() => {
+    if (venue?.zendio_account_id && searchParams.get("whatsapp") === "error") {
+      setConnectError(null);
+      router.replace("/admin/settings", { scroll: false });
+    }
+  }, [router, searchParams, venue?.zendio_account_id]);
 
   async function handleSaveVenue(e: React.FormEvent) {
     e.preventDefault();
@@ -95,6 +104,9 @@ export function SettingsManager({ venue }: { venue: VenueSettings | null }) {
       return;
     }
     setAccountLabel(result.data!.label);
+    setConnectError(null);
+    router.replace("/admin/settings", { scroll: false });
+    router.refresh();
   }
 
   return (
@@ -159,7 +171,7 @@ export function SettingsManager({ venue }: { venue: VenueSettings | null }) {
                 className="input"
               />
               <p className="mt-1 text-xs text-[var(--foreground-muted)]">
-                Menu prices are treated as VAT-inclusive — this only shows the tax breakdown on receipts.
+                Menu prices are VAT-exclusive. This percentage is added at checkout and shown separately on receipts.
               </p>
             </label>
             <label className="text-sm">
@@ -242,8 +254,8 @@ export function SettingsManager({ venue }: { venue: VenueSettings | null }) {
             </p>
           )}
 
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--border)] p-4">
-            <div>
+          <div className="mt-4 flex min-w-0 flex-col gap-4 rounded-lg border border-[var(--border)] p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <p className="text-sm font-semibold text-[var(--foreground)]">
                 {accountLabel ? accountLabel : "Not connected"}
               </p>
@@ -253,12 +265,12 @@ export function SettingsManager({ venue }: { venue: VenueSettings | null }) {
                   : "Click connect to link a WhatsApp Business number — no external dashboard needed."}
               </p>
             </div>
-            <div className="flex gap-2">
-              <button onClick={handleConnectWhatsApp} disabled={connecting} className="btn btn-primary">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              <button onClick={handleConnectWhatsApp} disabled={connecting} className="btn btn-primary w-full whitespace-normal sm:w-auto">
                 {connecting ? "Working…" : accountLabel ? "Reconnect WhatsApp" : "Connect WhatsApp"}
               </button>
               {accountLabel && (
-                <button onClick={handleRecheckStatus} disabled={connecting} className="btn btn-secondary">
+                <button onClick={handleRecheckStatus} disabled={connecting} className="btn btn-secondary w-full whitespace-normal sm:w-auto">
                   Re-check Status
                 </button>
               )}

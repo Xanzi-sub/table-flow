@@ -61,7 +61,7 @@ supabase link --project-ref <your-project-ref>
 supabase db push
 ```
 
-This applies all migrations through `0035_customer_staff_identity_guard.sql`. The migration
+This applies all migrations through `0036_vat_exclusive_order_totals.sql`. The migration
 history covers the core schema and storage, onboarding and staff invites,
 category groups, Zernio account data, waiter scoping and assignment, tips and
 service requests, loyalty and feedback, menu specials and quantity deals,
@@ -173,7 +173,7 @@ src/
   app/admin/                 # venue operations, CRM, menu, intelligence, staff and settings
   components/                # customer/staff/admin/onboarding UI split by surface
 supabase/
-  migrations/                # schema, RLS, triggers and RPCs through migration 0035
+  migrations/                # schema, RLS, triggers and RPCs through migration 0036
   functions/                 # AI extraction, WhatsApp campaigns, receipts and OTP
 ```
 

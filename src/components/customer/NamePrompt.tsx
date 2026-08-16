@@ -57,7 +57,7 @@ export function NamePrompt({
             </div>
           </div>
 
-          <div className="px-6 pb-7 pt-6">
+          <div className="px-4 pb-5 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
             <div className="mb-6">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8a847b]">
                 Welcome

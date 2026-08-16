@@ -140,7 +140,7 @@ function CartFab({ onOpen }: { onOpen: () => void }) {
   if (totalItems === 0) return null;
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 px-4 pb-4">
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 px-3 pb-3 sm:px-4 sm:pb-4">
       <button
         type="button"
         onClick={onOpen}
@@ -210,7 +210,7 @@ function SpecialsRail({ specials, items }: { specials: MenuSpecial[]; items: Men
         onClick={() => setExpanded((value) => !value)}
         aria-expanded={expanded}
         aria-controls="active-specials"
-        className="flex min-h-14 w-full items-center justify-between gap-3 px-4 py-2.5 text-left"
+        className="flex min-h-14 w-full items-center justify-between gap-3 px-3 py-2.5 text-left sm:px-4"
       >
         <div className="flex min-w-0 items-center gap-3">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--accent-500)] text-[11px] font-bold text-white">
@@ -244,7 +244,7 @@ function SpecialsRail({ specials, items }: { specials: MenuSpecial[]; items: Men
         </span>
       </button>
 
-      {expanded && <div id="active-specials" className="flex gap-3 overflow-x-auto border-t border-[#dce5d7] px-4 pb-4 pt-3">
+      {expanded && <div id="active-specials" className="flex gap-3 overflow-x-auto border-t border-[#dce5d7] px-3 pb-3 pt-3 sm:px-4 sm:pb-4">
         {specials.map((special) => {
           const specialItems = special.item_ids
             .map((id) => itemMap.get(id))
@@ -403,7 +403,7 @@ function MenuBrowser({
         <div className="shrink-0 border-b border-neutral-200/80 bg-white">
           <nav
             className="
-              flex gap-6 overflow-x-auto px-5 pt-1
+              flex gap-5 overflow-x-auto px-3 pt-1 sm:gap-6 sm:px-5
               scrollbar-none
             "
           >
@@ -456,7 +456,7 @@ function MenuBrowser({
       <div
         className="
           min-h-0 flex-1 overflow-y-auto
-          px-4 pb-32 pt-5
+          px-3 pb-32 pt-4 sm:px-4 sm:pt-5
           overscroll-contain
         "
       >
@@ -674,7 +674,7 @@ function MenuAppContent({
             bg-white
           "
         >
-          <div className="flex items-center justify-between px-4 py-3.5">
+          <div className="flex items-center justify-between px-3 py-3 sm:px-4 sm:py-3.5">
             <div className="flex min-w-0 items-center gap-3">
               {venueLogoUrl ? (
                 <div
@@ -744,7 +744,7 @@ function MenuAppContent({
 
         {initializing ? (
           <div className="flex flex-1 flex-col bg-[#fafaf9]">
-            <div className="flex gap-5 border-b border-neutral-200/70 bg-white px-5 py-3.5">
+            <div className="flex gap-4 border-b border-neutral-200/70 bg-white px-3 py-3 sm:gap-5 sm:px-5 sm:py-3.5">
               {[1, 2, 3].map((item) => (
                 <div
                   key={item}
@@ -753,7 +753,7 @@ function MenuAppContent({
               ))}
             </div>
 
-            <div className="space-y-3 px-4 pt-6">
+            <div className="space-y-3 px-3 pt-5 sm:px-4 sm:pt-6">
               <div className="h-6 w-28 animate-pulse rounded-lg bg-neutral-200" />
 
               {[1, 2, 3].map((item) => (

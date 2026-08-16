@@ -665,7 +665,7 @@ export function TableDetailModal({
         onClick={(event) => event.stopPropagation()}
       >
         {/* Header */}
-        <header className="flex h-[76px] shrink-0 items-center justify-between border-b border-[#DFE2E7] bg-white px-5">
+        <header className="flex h-[76px] shrink-0 items-center justify-between border-b border-[#DFE2E7] bg-white px-4 sm:px-5">
           <div>
             <div className="flex items-center gap-2.5">
               <span
@@ -738,7 +738,7 @@ export function TableDetailModal({
           )}
 
           {role === "waiter" && !table.current_waiter_id && (
-            <div className="border-b border-[var(--accent-200)] bg-[var(--accent-50)] px-5 py-4">
+            <div className="border-b border-[var(--accent-200)] bg-[var(--accent-50)] px-4 py-4 sm:px-5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-[10px] font-bold text-[var(--accent-700)]">Unassigned table</p>
@@ -754,7 +754,7 @@ export function TableDetailModal({
 
           {/* Service request */}
           {serviceRequests.length > 0 && (
-            <div className="border-b border-[#E8DDBF] bg-[#FFFBF1] px-5 py-3.5">
+            <div className="border-b border-[#E8DDBF] bg-[#FFFBF1] px-4 py-3.5 sm:px-5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />
@@ -785,7 +785,7 @@ export function TableDetailModal({
           )}
 
           {/* Orders section */}
-          <div className="px-5 py-5">
+          <div className="px-3 py-4 sm:px-5 sm:py-5">
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <h3 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[#737983]">
@@ -850,7 +850,7 @@ export function TableDetailModal({
 
           {/* Completed orders */}
           {completedOrders.length > 0 && (
-            <div className="border-t border-[#DFE2E6] bg-[#F8F9FA] px-5 py-5">
+            <div className="border-t border-[#DFE2E6] bg-[#F8F9FA] px-3 py-4 sm:px-5 sm:py-5">
               <div className="mb-3">
                 <h3 className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#858B95]">
                   Completed orders
@@ -899,7 +899,7 @@ export function TableDetailModal({
         </div>
 
         {/* Bottom summary */}
-        <footer className="shrink-0 border-t border-[#DDE1E6] bg-white px-5 py-4">
+        <footer className="shrink-0 border-t border-[#DDE1E6] bg-white px-4 py-4 sm:px-5">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-[9px] uppercase tracking-[0.1em] text-[#969BA4]">

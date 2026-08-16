@@ -19,7 +19,7 @@ export function CategoryNav({
       className="
         flex items-center gap-2
         overflow-x-auto
-        px-4 py-3
+        px-3 py-2.5 sm:px-4 sm:py-3
         scrollbar-none
         overscroll-x-contain
       "
@@ -36,7 +36,7 @@ export function CategoryNav({
             className={`
               relative shrink-0
               rounded-full
-              px-4 py-2
+              px-3 py-2 sm:px-4
               text-[13px]
               font-semibold
               tracking-[-0.01em]

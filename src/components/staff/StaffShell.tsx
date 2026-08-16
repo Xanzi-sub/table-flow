@@ -346,7 +346,7 @@ export function StaffShell({
             <form action={signOutStaff}><button type="submit" className="text-xs font-semibold text-slate-500 hover:text-slate-900">Sign out</button></form>
           </div>
         </div>
-        <main className="app-content w-full flex-1 overflow-x-hidden px-4 py-5 pb-24 sm:px-6 sm:py-6 sm:pb-6 lg:px-7 lg:py-7">{children}</main>
+        <main className="app-content w-full flex-1 overflow-x-hidden px-2 py-4 pb-24 sm:px-6 sm:py-6 sm:pb-6 lg:px-7 lg:py-7">{children}</main>
       </div>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] sm:hidden" aria-label="Mobile primary navigation">

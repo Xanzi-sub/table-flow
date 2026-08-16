@@ -85,7 +85,7 @@ export function ItemDetailModal({
           </div>
 
           {/* Content */}
-          <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-5 pb-5 sm:px-7">
+          <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-4 pb-4 sm:px-7 sm:pb-5">
             <div className="relative">
               <div className="flex items-start justify-between gap-5">
                 <div className="min-w-0">
@@ -179,7 +179,7 @@ export function ItemDetailModal({
           </div>
 
           {/* Bottom action */}
-          <div className="shrink-0 border-t border-[#e7e2da] bg-[#faf9f7] px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-4 sm:px-7">
+          <div className="shrink-0 border-t border-[#e7e2da] bg-[#faf9f7] px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 sm:px-7 sm:pb-[max(20px,env(safe-area-inset-bottom))] sm:pt-4">
             <div className="flex items-center justify-between gap-4">
               <div className="flex h-[50px] items-center rounded-full border border-[#d9d4cc] bg-white px-1.5">
                 <button

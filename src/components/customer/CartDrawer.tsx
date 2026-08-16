@@ -108,7 +108,7 @@ export function CartDrawer({
       <div className="flex h-full min-h-0 items-end justify-center sm:items-center sm:p-6">
         <div className="flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[30px] bg-[#faf9f7] shadow-[0_-20px_70px_rgba(0,0,0,0.2)] sm:max-h-[calc(100dvh-3rem)] sm:max-w-[540px] sm:rounded-[30px]">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-[#e7e2da] px-5 py-5 sm:px-7">
+          <div className="flex items-center justify-between border-b border-[#e7e2da] px-4 py-4 sm:px-7 sm:py-5">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#99938a]">
                 Ready when you are
@@ -184,7 +184,7 @@ export function CartDrawer({
           ) : (
             <>
               {/* Items */}
-              <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-5 sm:px-7">
+              <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-3 sm:px-7">
                 <div className="divide-y divide-[#e7e2da]">
                   {lines.map((line) => (
                     <div
@@ -310,7 +310,7 @@ export function CartDrawer({
               </div>
 
               {/* Bottom summary */}
-              <div className="shrink-0 border-t border-[#e7e2da] bg-[#faf9f7] px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-4 sm:px-7">
+              <div className="shrink-0 border-t border-[#e7e2da] bg-[#faf9f7] px-3 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 sm:px-7 sm:pb-[max(20px,env(safe-area-inset-bottom))] sm:pt-4">
                 {error && (
                   <div className="mb-3 flex items-start gap-2.5 rounded-[13px] bg-red-50 px-3.5 py-3 text-[12px] leading-relaxed text-red-700">
                     <svg

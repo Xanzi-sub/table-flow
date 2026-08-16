@@ -259,7 +259,7 @@ export function StaffDashboard({
     <div className="min-h-full bg-[#F5F6F8]">
       {/* Application header */}
       <header className="sticky top-0 z-30 border-b border-[#DFE2E7] bg-white">
-        <div className="flex h-[68px] items-center justify-between px-5 lg:px-7">
+        <div className="flex h-[68px] items-center justify-between px-3 sm:px-5 lg:px-7">
           <div className="flex items-center gap-4">
             <div>
               <div className="text-[15px] font-semibold tracking-[-0.02em] text-[#15181D]">
@@ -304,7 +304,7 @@ export function StaffDashboard({
         </div>
       </header>
 
-      <main className="px-5 py-6 lg:px-7 lg:py-7">
+      <main className="px-3 py-4 sm:px-5 sm:py-6 lg:px-7 lg:py-7">
         {/* Metrics */}
         <section className="mb-6 grid grid-cols-2 border border-[#DEE1E6] bg-white sm:grid-cols-4">
           <Metric

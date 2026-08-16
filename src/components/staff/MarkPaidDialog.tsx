@@ -1,19 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { markTablePaid } from "@/app/actions/tables";
+import { markOrderPaid } from "@/app/actions/tables";
 import type { PaymentMethod } from "@/types/database";
 
 /** Small tip-capture step inserted between "Cash/Card" and actually marking a table paid. */
 export function MarkPaidDialog({
   open,
-  tableId,
+  orderId,
   method,
   onClose,
   onSuccess,
 }: {
   open: boolean;
-  tableId: string;
+  orderId: string;
   method: PaymentMethod;
   onClose: () => void;
   onSuccess: () => void;
@@ -27,7 +27,7 @@ export function MarkPaidDialog({
   async function handleConfirm() {
     setLoading(true);
     setError(null);
-    const result = await markTablePaid(tableId, method, Number(tip) || 0);
+    const result = await markOrderPaid(orderId, method, Number(tip) || 0);
     setLoading(false);
     if (!result.success) {
       setError(result.error ?? "Could not mark as paid");

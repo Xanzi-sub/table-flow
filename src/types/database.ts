@@ -265,8 +265,8 @@ export interface Database {
       staff_profiles_is_empty: { Args: Record<string, never>; Returns: boolean };
       request_table_service: { Args: { p_table_id: string }; Returns: undefined };
       get_table_waiter_name: { Args: { p_table_id: string }; Returns: string | null };
-      mark_table_paid_with_loyalty: {
-        Args: { p_table_id: string; p_method: PaymentMethod; p_tip_amount?: number };
+      mark_order_paid_with_loyalty: {
+        Args: { p_order_id: string; p_method: PaymentMethod; p_tip_amount?: number };
         Returns: undefined;
       };
     };

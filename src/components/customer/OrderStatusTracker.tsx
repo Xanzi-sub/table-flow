@@ -207,19 +207,20 @@ export function OrderStatusTracker({
 
   useEffect(() => {
     const supabase = createClient();
+    let active = true;
 
-    supabase
-      .from("orders")
-      .select("*")
-      .eq("id", orderId)
-      .single()
-      .then(({ data }) => data && setOrder(data));
+    async function loadOrder() {
+      const { data } = await supabase.from("orders").select("*").eq("id", orderId).single();
+      if (active && data) setOrder(data);
+    }
 
+    void loadOrder();
     supabase
       .from("order_items")
       .select("quantity, unit_price, special_name, bundle_id, menu_items(name)")
       .eq("order_id", orderId)
       .then(({ data }) => {
+        if (!active) return;
         type Row = {
           quantity: number;
           unit_price: number;
@@ -251,9 +252,20 @@ export function OrderStatusTracker({
         },
         (payload) => setOrder(payload.new as Order)
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") void loadOrder();
+      });
+
+    const fallback = window.setInterval(loadOrder, 3000);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") void loadOrder();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
+      active = false;
+      window.clearInterval(fallback);
+      document.removeEventListener("visibilitychange", handleVisibility);
       supabase.removeChannel(channel);
     };
   }, [orderId]);
@@ -268,9 +280,11 @@ export function OrderStatusTracker({
   const loyaltyProgress = loyaltyRewardThreshold > 0
     ? Math.min(100, Math.round((loyaltyPoints / loyaltyRewardThreshold) * 100))
     : 0;
-  // Re-enable automatically once staff mark the bill paid — no need to
-  // close/reopen this modal to request again for a later round.
-  const requested = order?.payment_status !== "paid" && requesting;
+  const requested = requesting;
+
+  useEffect(() => {
+    if (order?.payment_status === "paid") setRequesting(false);
+  }, [order?.payment_status]);
 
   async function handleRequest() {
     setRequesting(true);
@@ -404,9 +418,6 @@ export function OrderStatusTracker({
             {order?.status === "completed" && customerId && (
               <OrderFeedbackForm
                 orderId={order.id}
-                customerId={customerId}
-                tableId={tableId}
-                waiterId={order.waiter_id}
               />
             )}
 

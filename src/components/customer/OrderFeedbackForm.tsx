@@ -13,14 +13,8 @@ function Star({ filled }: { filled: boolean }) {
 
 export function OrderFeedbackForm({
   orderId,
-  customerId,
-  tableId,
-  waiterId,
 }: {
   orderId: string;
-  customerId: string;
-  tableId: string;
-  waiterId: string | null;
 }) {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
@@ -32,7 +26,7 @@ export function OrderFeedbackForm({
     if (!rating) return;
     setSubmitting(true);
     setError(null);
-    const result = await submitOrderFeedback({ orderId, customerId, tableId, waiterId, rating, comment });
+    const result = await submitOrderFeedback({ orderId, rating, comment });
     setSubmitting(false);
     if (!result.success) {
       setError(result.error ?? "Could not save your feedback");

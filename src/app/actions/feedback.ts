@@ -7,21 +7,31 @@ import type { FeedbackRecoveryStatus } from "@/types/database";
 
 export async function submitOrderFeedback(input: {
   orderId: string;
-  customerId: string;
-  tableId: string;
-  waiterId?: string | null;
   rating: number;
   comment?: string;
 }): Promise<ActionResult> {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Your ordering session has expired." };
+
+  const { data: order, error: orderError } = await supabase
+    .from("orders")
+    .select("id, customer_id, table_id, waiter_id")
+    .eq("id", input.orderId)
+    .eq("customer_session_id", user.id)
+    .single();
+  if (orderError || !order) return { success: false, error: "This order does not belong to your session." };
+
   const rating = Math.max(1, Math.min(5, Math.round(input.rating)));
 
   const { error } = await supabase.from("order_feedback").upsert(
     {
       order_id: input.orderId,
-      customer_id: input.customerId,
-      table_id: input.tableId,
-      waiter_id: input.waiterId ?? null,
+      customer_id: order.customer_id ?? user.id,
+      table_id: order.table_id,
+      waiter_id: order.waiter_id,
       rating,
       comment: input.comment?.trim() || null,
     },

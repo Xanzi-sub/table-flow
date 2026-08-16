@@ -43,6 +43,15 @@ export function StaffDashboard({
   useEffect(() => {
     const supabase = createClient();
 
+    async function syncFloor() {
+      const [{ data: latestTables }, { data: latestOrders }] = await Promise.all([
+        supabase.from("tables").select("*").order("table_number"),
+        supabase.from("orders").select("*").in("status", ["pending", "preparing", "served"]),
+      ]);
+      if (latestTables) setTables(latestTables);
+      if (latestOrders) setOrders(latestOrders);
+    }
+
     const channel = supabase
       .channel("staff-dashboard")
 
@@ -113,9 +122,21 @@ export function StaffDashboard({
         }
       )
 
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") void syncFloor();
+      });
+
+    // Realtime is primary; this catches missed WebSocket events after mobile
+    // sleep, network changes, or a temporarily disconnected Supabase channel.
+    const fallback = window.setInterval(syncFloor, 5000);
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") void syncFloor();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
+      window.clearInterval(fallback);
+      document.removeEventListener("visibilitychange", handleVisibility);
       supabase.removeChannel(channel);
     };
   }, []);
@@ -130,15 +151,13 @@ export function StaffDashboard({
     [orders]
   );
 
-  const unpaidTableIds = useMemo(
-    () =>
-      new Set(
-        orders
-          .filter((order) => order.payment_status !== "paid")
-          .map((order) => order.table_id)
-      ),
-    [orders]
-  );
+  function handleServiceResolved(tableId: string) {
+    setTables((current) =>
+      current.map((table) =>
+        table.id === tableId ? { ...table, service_requested_at: null, status: "dining" } : table
+      )
+    );
+  }
 
   const visibleTables = useMemo(() => {
     let result = tables;
@@ -343,12 +362,12 @@ export function StaffDashboard({
                 key={table.id}
                 table={table}
                 hasNewOrder={newOrderTableIds.has(table.id)}
-                hasUnpaidOrder={unpaidTableIds.has(table.id)}
                 waiterName={
                   table.current_waiter_id
                     ? waiterNames[table.current_waiter_id]
                     : undefined
                 }
+                onServiceResolved={handleServiceResolved}
                 onOpenDetail={() => setSelectedTable(table)}
               />
             ))}
@@ -447,6 +466,7 @@ export function StaffDashboard({
           table={selectedTableLive}
           role={profile.role}
           waiters={waiters}
+          onServiceResolved={handleServiceResolved}
           onClose={() => setSelectedTable(null)}
         />
       )}

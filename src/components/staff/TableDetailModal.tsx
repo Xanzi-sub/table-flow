@@ -84,12 +84,12 @@ function OrderCard({
   order,
   lines,
   customerName,
-  onPaymentComplete,
+  onOrderUpdated,
 }: {
   order: Order;
   lines: OrderLine[];
   customerName?: string;
-  onPaymentComplete?: () => void;
+  onOrderUpdated: (orderId: string, updates: Partial<Order>) => void;
 }) {
   const [updating, setUpdating] = useState(false);
   const [payingWith, setPayingWith] = useState<
@@ -123,13 +123,19 @@ function OrderCard({
       setPayError(
         result?.error ?? "Could not update order status."
       );
+      return;
     }
+    onOrderUpdated(order.id, { status: nextStatus });
   }
 
   function handlePaymentSuccess() {
+    const method = payingWith;
     setPayingWith(null);
     setPaymentComplete(true);
-    onPaymentComplete?.();
+    onOrderUpdated(order.id, {
+      payment_status: "paid",
+      payment_method: method,
+    });
 
     setTimeout(() => {
       setPaymentComplete(false);
@@ -303,7 +309,7 @@ function OrderCard({
 
       <MarkPaidDialog
         open={payingWith !== null}
-        tableId={order.table_id}
+        orderId={order.id}
         method={payingWith ?? "cash"}
         onClose={() => setPayingWith(null)}
         onSuccess={handlePaymentSuccess}
@@ -413,6 +419,7 @@ export function TableDetailModal({
   table,
   role,
   waiters,
+  onServiceResolved,
   onClose,
 }: {
   table: TableRow;
@@ -421,6 +428,7 @@ export function TableDetailModal({
     StaffProfile,
     "id" | "full_name" | "is_checked_in"
   >[];
+  onServiceResolved: (tableId: string) => void;
   onClose: () => void;
 }) {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -435,8 +443,15 @@ export function TableDetailModal({
 
   async function handleResolveRequest() {
     setResolvingRequest(true);
+    onServiceResolved(table.id);
     await resolveServiceRequest(table.id);
     setResolvingRequest(false);
+  }
+
+  function handleOrderUpdated(orderId: string, updates: Partial<Order>) {
+    setOrders((current) =>
+      current.map((order) => (order.id === orderId ? { ...order, ...updates } : order))
+    );
   }
 
   useEffect(() => {
@@ -763,6 +778,7 @@ export function TableDetailModal({
                           ]
                         : undefined
                     }
+                    onOrderUpdated={handleOrderUpdated}
                   />
                 ))}
               </div>

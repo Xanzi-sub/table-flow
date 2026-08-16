@@ -2,7 +2,6 @@
 
 import type { TableRow } from "@/types/database";
 import { resolveServiceRequest } from "@/app/actions/tables";
-import { MarkPaidDialog } from "./MarkPaidDialog";
 import { useState } from "react";
 import { formatStaffName } from "@/lib/utils";
 
@@ -30,33 +29,29 @@ const STATUS_TEXT: Record<TableRow["status"], string> = {
 export function TableCard({
   table,
   hasNewOrder,
-  hasUnpaidOrder,
   waiterName,
+  onServiceResolved,
   onOpenDetail,
 }: {
   table: TableRow;
   hasNewOrder: boolean;
-  hasUnpaidOrder: boolean;
   waiterName?: string;
+  onServiceResolved: (tableId: string) => void;
   onOpenDetail: () => void;
 }) {
   const [loading, setLoading] = useState(false);
-  const [justPaid, setJustPaid] = useState(false);
-  const [payingWith, setPayingWith] = useState<"cash" | "speedpoint" | null>(null);
 
   const needsAttention =
     hasNewOrder || table.status === "awaiting_bill" || Boolean(table.service_requested_at);
 
   async function handleResolveRequest() {
     setLoading(true);
-    await resolveServiceRequest(table.id);
+    onServiceResolved(table.id);
+    const result = await resolveServiceRequest(table.id);
+    if (!result.success) {
+      // The dashboard fallback sync restores server truth if the update fails.
+    }
     setLoading(false);
-  }
-
-  function handlePaymentSuccess() {
-    setPayingWith(null);
-    setJustPaid(true);
-    setTimeout(() => setJustPaid(false), 2000);
   }
 
   return (
@@ -157,51 +152,11 @@ export function TableCard({
         </div>
       )}
 
-      {justPaid && (
-        <div className="absolute bottom-4 left-4 right-4 border-t border-[#E9EBEE] pt-3 text-[9px] font-medium text-emerald-600">
-          Payment recorded
-        </div>
-      )}
-
-      {/* Payment controls */}
-      {(table.status === "dining" ||
-        table.status === "awaiting_bill") &&
-        hasUnpaidOrder &&
-        !justPaid && (
-          <div
-            className="absolute bottom-3 left-3 right-3 flex gap-1.5"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <button
-              onClick={() => setPayingWith("cash")}
-              disabled={loading}
-              className="h-7 flex-1 border border-[#D9DDE2] bg-white text-[9px] font-medium text-[#555C66] transition-colors hover:bg-[#F4F5F7] disabled:opacity-50"
-            >
-              Cash
-            </button>
-
-            <button
-              onClick={() => setPayingWith("speedpoint")}
-              disabled={loading}
-              className="h-7 flex-1 border border-[#D9DDE2] bg-white text-[9px] font-medium text-[#555C66] transition-colors hover:bg-[#F4F5F7] disabled:opacity-50"
-            >
-              Card
-            </button>
-          </div>
-        )}
-
       {/* Hover affordance */}
       <div className="pointer-events-none absolute right-3 top-3 opacity-0 transition-opacity group-hover:opacity-100">
         <span className="text-[12px] text-[#A0A5AD]">↗</span>
       </div>
 
-      <MarkPaidDialog
-        open={payingWith !== null}
-        tableId={table.id}
-        method={payingWith ?? "cash"}
-        onClose={() => setPayingWith(null)}
-        onSuccess={handlePaymentSuccess}
-      />
     </div>
   );
 }

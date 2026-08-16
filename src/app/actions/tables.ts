@@ -163,14 +163,14 @@ export async function reassignTableWaiter(
  * so it's stamped onto a single order (never split/duplicated across the
  * table's other open orders).
  */
-export async function markTablePaid(
-  tableId: string,
+export async function markOrderPaid(
+  orderId: string,
   method: PaymentMethod,
   tipAmount: number = 0
 ): Promise<ActionResult> {
   const supabase = await createClient();
-  const { error } = await supabase.rpc("mark_table_paid_with_loyalty", {
-    p_table_id: tableId,
+  const { error } = await supabase.rpc("mark_order_paid_with_loyalty", {
+    p_order_id: orderId,
     p_method: method,
     p_tip_amount: Math.max(0, tipAmount),
   });
@@ -188,7 +188,7 @@ export async function resolveServiceRequest(tableId: string): Promise<ActionResu
   const supabase = await createClient();
   const { error } = await supabase
     .from("tables")
-    .update({ service_requested_at: null })
+    .update({ service_requested_at: null, status: "dining" })
     .eq("id", tableId);
 
   if (error) return { success: false, error: error.message };

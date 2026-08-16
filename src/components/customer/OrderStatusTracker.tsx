@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Order, OrderStatus } from "@/types/database";
-import { requestTableService } from "@/app/actions/orders";
+import { requestTableAssistance } from "@/app/actions/orders";
 import { formatCurrency, formatDateTime, formatStaffName } from "@/lib/utils";
 import { OrderFeedbackForm } from "./OrderFeedbackForm";
 
@@ -210,6 +210,7 @@ export function OrderStatusTracker({
   const [order, setOrder] = useState<Order | null>(null);
   const [lines, setLines] = useState<ReceiptLine[]>([]);
   const [requesting, setRequesting] = useState(false);
+  const [callingWaiter, setCallingWaiter] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -293,9 +294,16 @@ export function OrderStatusTracker({
     if (order?.payment_status === "paid") setRequesting(false);
   }, [order?.payment_status]);
 
-  async function handleRequest() {
+  async function handleBillRequest() {
     setRequesting(true);
-    await requestTableService(tableId);
+    const result = await requestTableAssistance(tableId, "bill_requested");
+    if (!result.success) setRequesting(false);
+  }
+
+  async function handleCallWaiter() {
+    setCallingWaiter(true);
+    const result = await requestTableAssistance(tableId, "waiter_call");
+    if (!result.success) setCallingWaiter(false);
   }
 
   useEffect(() => {
@@ -440,13 +448,14 @@ export function OrderStatusTracker({
               </div>
             )}
 
-            <button
-              onClick={handleRequest}
-              disabled={requested}
-              className="mt-4 w-full rounded-[13px] bg-[#171614] py-3 text-[13px] font-semibold text-white transition-all hover:bg-black active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {requested ? "Waiter has been notified ✓" : "Request Waiter / Speedpoint"}
-            </button>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button onClick={handleCallWaiter} disabled={callingWaiter} className="rounded-[13px] border border-[#171614] bg-white px-3 py-3 text-[13px] font-semibold text-[#171614] disabled:opacity-50">
+                {callingWaiter ? "Waiter called ✓" : "Call Waiter"}
+              </button>
+              <button onClick={handleBillRequest} disabled={requested} className="rounded-[13px] bg-[#171614] px-3 py-3 text-[13px] font-semibold text-white disabled:opacity-50">
+                {requested ? "Bill requested ✓" : "Request Bill"}
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -12,6 +12,7 @@ import {
   DollarSign,
   LayoutGrid,
   LogOut,
+  Bell,
   Menu as MenuIcon,
   QrCode,
   Settings,
@@ -27,6 +28,7 @@ import { signOutStaff } from "@/app/actions/auth";
 import { toggleCheckIn } from "@/app/actions/tables";
 import { formatStaffName } from "@/lib/utils";
 import type { UserRole } from "@/types/database";
+import { StaffNotificationCentre } from "@/components/staff/StaffNotifications";
 
 interface NavItem {
   href: string;
@@ -45,6 +47,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/staff/dashboard", label: "Live Floor", roles: ["waiter", "manager", "admin"], section: "operations", icon: LayoutGrid },
   { href: "/staff/orders", label: "Orders", roles: ["waiter"], section: "operations", icon: ClipboardList },
   { href: "/staff/tips", label: "Tips", roles: ["waiter"], section: "operations", icon: DollarSign },
+  { href: "/staff/notifications", label: "Notifications", roles: ["waiter", "manager", "admin"], section: "operations", icon: Bell },
   { href: "/admin/tables", label: "Tables & QR", roles: ["manager", "admin"], section: "operations", icon: Table2 },
   { href: "/admin/orders", label: "Orders", roles: ["manager", "admin"], section: "operations", icon: ClipboardList },
   { href: "/admin/customers", label: "Customers", roles: ["manager", "admin"], section: "operations", icon: Users },
@@ -229,6 +232,7 @@ export function StaffShell({
   isCheckedIn,
   venueName,
   venueLogoUrl,
+  venueId,
   children,
 }: {
   role: UserRole;
@@ -237,6 +241,7 @@ export function StaffShell({
   isCheckedIn: boolean;
   venueName?: string | null;
   venueLogoUrl?: string | null;
+  venueId?: string | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -299,6 +304,7 @@ export function StaffShell({
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 xl:hidden">
         <VenueIdentity venueName={venueName} venueLogoUrl={venueLogoUrl} mobile />
         <div className="flex items-center gap-2">
+          <StaffNotificationCentre staffId={staffId} venueId={venueId} compact />
           {role === "waiter" && <DutyToggle staffId={staffId} isCheckedIn={isCheckedIn} compact onStatusChange={showToast} />}
           <button type="button" onClick={() => setNavOpen(true)} aria-label="Open navigation" className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50">
             <MenuIcon className="h-4 w-4" />
@@ -332,13 +338,27 @@ export function StaffShell({
           <div className="flex items-center gap-4">
             {role === "waiter" && <DutyToggle staffId={staffId} isCheckedIn={isCheckedIn} compact onStatusChange={showToast} />}
             <div className="h-5 w-px bg-slate-200" />
+            <StaffNotificationCentre staffId={staffId} venueId={venueId} compact />
             <UserAvatar displayName={displayName} compact />
             <div className="text-right"><p className="text-xs font-bold">{displayName}</p><p className="text-xs capitalize text-slate-500">{role}</p></div>
             <form action={signOutStaff}><button type="submit" className="text-xs font-semibold text-slate-500 hover:text-slate-900">Sign out</button></form>
           </div>
         </div>
-        <main className="app-content w-full flex-1 overflow-x-hidden px-4 py-5 sm:px-6 sm:py-6 lg:px-7 lg:py-7">{children}</main>
+        <main className="app-content w-full flex-1 overflow-x-hidden px-4 py-5 pb-24 sm:px-6 sm:py-6 sm:pb-6 lg:px-7 lg:py-7">{children}</main>
       </div>
+
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] sm:hidden" aria-label="Mobile primary navigation">
+        {[
+          { href: "/staff/dashboard", label: "Floor", icon: LayoutGrid },
+          { href: role === "waiter" ? "/staff/orders" : "/admin/orders", label: "Orders", icon: ClipboardList },
+          { href: "/staff/notifications", label: "Alerts", icon: Bell },
+          { href: role === "waiter" ? "/staff/tips" : "/admin/settings", label: role === "waiter" ? "Profile" : "Settings", icon: role === "waiter" ? Users : Settings },
+        ].map((item) => {
+          const Icon = item.icon;
+          const active = isActive(item.href);
+          return <Link key={item.href} href={item.href} className={`flex min-h-16 flex-col items-center justify-center gap-1 text-[10px] font-bold ${active ? "text-blue-700" : "text-slate-500"}`}><Icon className="h-5 w-5" />{item.label}</Link>;
+        })}
+      </nav>
 
       {toast && <Toast {...toast} />}
     </div>

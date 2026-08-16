@@ -241,6 +241,9 @@ export async function submitOrder(input: {
   supabase.functions
     .invoke("send-order-receipt", { body: { orderId: order.id } })
     .catch(() => {});
+  supabase.functions
+    .invoke("send-staff-push", { body: { orderId: order.id, notificationType: "new_order" } })
+    .catch(() => {});
 
   revalidatePath("/staff/dashboard");
   return {
@@ -258,6 +261,13 @@ export async function submitOrder(input: {
 export async function requestTableService(
   tableId: string
 ): Promise<ActionResult> {
+  return requestTableAssistance(tableId, "bill_requested");
+}
+
+export async function requestTableAssistance(
+  tableId: string,
+  requestType: "waiter_call" | "bill_requested"
+): Promise<ActionResult> {
   if (!UUID_PATTERN.test(tableId)) return { success: false, error: "Invalid table" };
   const supabase = await createClient();
   const {
@@ -266,8 +276,8 @@ export async function requestTableService(
   if (!user) return { success: false, error: "Your ordering session has expired." };
   try {
     await enforceRateLimit({
-      scope: "table-service",
-      identifier: `${user.id}:${tableId}`,
+      scope: `table-service-${requestType}`,
+      identifier: `${user.id}:${tableId}:${requestType}`,
       limit: 3,
       windowSeconds: 60,
     });
@@ -279,9 +289,18 @@ export async function requestTableService(
   }
   // Direct table UPDATE is staff-only under RLS — this RPC is SECURITY
   // DEFINER so an anonymous customer session can still flag their own table.
-  const { error } = await supabase.rpc("request_table_service", { p_table_id: tableId });
+  const { data: requestId, error } = await supabase.rpc("request_table_assistance", {
+    p_table_id: tableId,
+    p_request_type: requestType,
+  });
 
   if (error) return { success: false, error: error.message };
+  const { data: request } = await supabase.from("table_service_requests").select("order_id").eq("id", requestId).single();
+  if (request?.order_id) {
+    supabase.functions.invoke("send-staff-push", {
+      body: { orderId: request.order_id, notificationType: requestType },
+    }).catch(() => {});
+  }
 
   revalidatePath("/staff/dashboard");
   return { success: true };
@@ -301,6 +320,11 @@ export async function updateOrderStatus(
     .single();
 
   if (error) return { success: false, error: error.message };
+  if (status === "cancelled") {
+    supabase.functions.invoke("send-staff-push", {
+      body: { orderId, notificationType: "order_cancelled" },
+    }).catch(() => {});
+  }
 
   // Completing an order frees up the table, but only once every other
   // active order for it is also completed/cancelled — not on payment alone.

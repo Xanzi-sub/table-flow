@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Order, StaffProfile, TableRow } from "@/types/database";
 import { TableCard } from "./TableCard";
@@ -39,6 +40,14 @@ export function StaffDashboard({
   const [orders, setOrders] = useState(initialOrders);
   const [selectedTable, setSelectedTable] = useState<TableRow | null>(null);
   const [filter, setFilter] = useState<FloorFilter>("all");
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const tableId = searchParams.get("tableId");
+    if (!tableId) return;
+    const table = tables.find((item) => item.id === tableId);
+    if (table) setSelectedTable(table);
+  }, [searchParams, tables]);
 
   useEffect(() => {
     const supabase = createClient();

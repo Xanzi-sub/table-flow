@@ -17,6 +17,7 @@ export default async function StaffProtectedLayout({
       isCheckedIn={profile.is_checked_in}
       venueName={venue?.name}
       venueLogoUrl={venue?.logo_url}
+      venueId={venue?.id}
     >
       {children}
     </StaffShell>

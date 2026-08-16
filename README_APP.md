@@ -193,7 +193,14 @@ public landing page uses the TableFlow green brand direction and larger logo.
 - **Browser hardening:** HSTS, frame denial, MIME sniffing prevention,
   referrer policy, permissions policy and a restrictive baseline CSP are sent
   globally.
-- **Database:** migrations currently run through `0026_storage_security.sql`.
+- **Native staff app:** Capacitor wraps the hosted `/staff/*` and `/admin/*`
+  application for Android/iOS while guests continue using the web QR menu.
+- **Notifications:** `staff_notifications` is the persistent source of truth;
+  Realtime drives foreground UI/sound and FCM/APNs handle background or closed
+  apps. Tokens are stored per authenticated staff device. New orders, calls,
+  bill requests, cancellations, assignments and unassigned work are routed
+  from authoritative database state.
+- **Database:** migrations currently run through `0027_staff_notifications.sql`.
 
 See [README.md](README.md) for installation, environment variables, migrations,
 Edge Function deployment, routes and external support API examples.

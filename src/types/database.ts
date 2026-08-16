@@ -19,6 +19,47 @@ export type OrderStatus =
   | "cancelled";
 export type PaymentStatus = "unpaid" | "portal_processing" | "paid";
 export type PaymentMethod = "cash" | "speedpoint" | "online_portal";
+export type StaffNotificationType = "new_order" | "waiter_call" | "bill_requested" | "order_cancelled" | "table_assigned" | "manager_message" | "unassigned_order";
+
+export interface StaffDevice {
+  id: string;
+  staff_id: string;
+  venue_id: string | null;
+  platform: "android" | "ios";
+  push_token: string;
+  device_identifier: string;
+  app_version: string | null;
+  is_active: boolean;
+  last_seen_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StaffNotification {
+  id: string;
+  venue_id: string | null;
+  recipient_staff_id: string;
+  type: StaffNotificationType;
+  title: string;
+  body: string;
+  table_id: string | null;
+  order_id: string | null;
+  metadata: Record<string, unknown>;
+  event_key: string;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface TableServiceRequest {
+  id: string;
+  table_id: string;
+  order_id: string;
+  customer_session_id: string;
+  request_type: "waiter_call" | "bill_requested";
+  resolved_at: string | null;
+  resolved_by: string | null;
+  created_at: string;
+}
 
 export interface StaffProfile {
   id: string;
@@ -295,6 +336,9 @@ export interface Database {
       support_tickets: { Row: SupportTicket; Insert: Partial<SupportTicket> & { venue_name: string; subject: string; description: string; category: SupportTicketCategory; created_by: string }; Update: Partial<SupportTicket>; Relationships: [] };
       support_ticket_messages: { Row: SupportTicketMessage; Insert: Partial<SupportTicketMessage> & { ticket_id: string; author_type: SupportTicketMessage["author_type"]; author_name: string; body: string }; Update: Partial<SupportTicketMessage>; Relationships: [] };
       support_ticket_events: { Row: SupportTicketEvent; Insert: Partial<SupportTicketEvent> & { ticket_id: string; event_type: string; actor_type: SupportTicketEvent["actor_type"] }; Update: Partial<SupportTicketEvent>; Relationships: [] };
+      staff_devices: { Row: StaffDevice; Insert: Partial<StaffDevice> & { staff_id: string; platform: StaffDevice["platform"]; push_token: string; device_identifier: string }; Update: Partial<StaffDevice>; Relationships: [] };
+      staff_notifications: { Row: StaffNotification; Insert: Partial<StaffNotification> & { recipient_staff_id: string; type: StaffNotificationType; title: string; body: string; event_key: string }; Update: Partial<StaffNotification>; Relationships: [] };
+      table_service_requests: { Row: TableServiceRequest; Insert: Partial<TableServiceRequest> & { table_id: string; order_id: string; customer_session_id: string; request_type: TableServiceRequest["request_type"] }; Update: Partial<TableServiceRequest>; Relationships: [] };
       tip_cashout_requests: { Row: TipCashoutRequest; Insert: Partial<TipCashoutRequest> & { waiter_id: string; amount: number }; Update: Partial<TipCashoutRequest>; Relationships: [] };
       venue_settings: { Row: VenueSettings; Insert: Partial<VenueSettings> & { name: string }; Update: Partial<VenueSettings>; Relationships: [] };
       staff_invites: { Row: StaffInvite; Insert: Partial<StaffInvite> & { email: string; full_name: string }; Update: Partial<StaffInvite>; Relationships: [] };
@@ -318,6 +362,8 @@ export interface Database {
       };
       staff_profiles_is_empty: { Args: Record<string, never>; Returns: boolean };
       request_table_service: { Args: { p_table_id: string }; Returns: undefined };
+      request_table_assistance: { Args: { p_table_id: string; p_request_type: "waiter_call" | "bill_requested" }; Returns: string };
+      resolve_table_service_requests: { Args: { p_table_id: string }; Returns: undefined };
       get_table_waiter_name: { Args: { p_table_id: string }; Returns: string | null };
       mark_order_paid_with_loyalty: {
         Args: { p_order_id: string; p_method: PaymentMethod; p_tip_amount?: number };

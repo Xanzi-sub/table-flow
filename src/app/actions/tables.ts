@@ -146,6 +146,12 @@ export async function reassignTableWaiter(
     .in("status", ["pending", "preparing", "served"]);
   if (ordersError) return { success: false, error: ordersError.message };
 
+  if (waiterId) {
+    supabase.functions.invoke("send-staff-push", {
+      body: { tableId, notificationType: "table_assigned" },
+    }).catch(() => {});
+  }
+
   revalidatePath("/staff/dashboard");
   revalidatePath("/admin/tables");
   return { success: true };
@@ -189,10 +195,7 @@ export async function markOrderPaid(
 /** Clears the "customer needs help" alert — waiters resolve their own table's request, managers/admins can resolve any. */
 export async function resolveServiceRequest(tableId: string): Promise<ActionResult> {
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("tables")
-    .update({ service_requested_at: null, status: "dining" })
-    .eq("id", tableId);
+  const { error } = await supabase.rpc("resolve_table_service_requests", { p_table_id: tableId });
 
   if (error) return { success: false, error: error.message };
 

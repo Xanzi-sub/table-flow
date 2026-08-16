@@ -10,10 +10,21 @@
     "lint": "eslint",
     "supabase:login": "supabase login",
     "supabase:link": "supabase link",
-    "supabase:deploy": "supabase functions deploy extract-menu-items && supabase functions deploy send-marketing-campaign && supabase functions deploy send-order-receipt && supabase functions deploy send-otp-whatsapp --no-verify-jwt",
-    "supabase:logs": "supabase functions logs extract-menu-items"
+    "supabase:deploy": "supabase functions deploy extract-menu-items && supabase functions deploy send-marketing-campaign && supabase functions deploy send-order-receipt && supabase functions deploy send-otp-whatsapp --no-verify-jwt && supabase functions deploy send-staff-push",
+    "supabase:logs": "supabase functions logs extract-menu-items",
+    "cap:sync": "cap sync",
+    "cap:android": "cap open android",
+    "cap:ios": "cap open ios"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/device": "^8.0.3",
+    "@capacitor/ios": "^8.5.0",
+    "@capacitor/push-notifications": "^8.1.2",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.3",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -31,6 +42,7 @@
     "server-only": "^0.0.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/papaparse": "^5.5.2",

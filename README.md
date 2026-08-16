@@ -53,12 +53,13 @@ supabase link --project-ref <your-project-ref>
 supabase db push
 ```
 
-This applies all migrations through `0026_storage_security.sql`. The migration
+This applies all migrations through `0027_staff_notifications.sql`. The migration
 history covers the core schema and storage, onboarding and staff invites,
 category groups, Zernio account data, waiter scoping and assignment, tips and
 service requests, loyalty and feedback, menu specials and quantity deals,
 order-scoped payments, loyalty redemption, support tickets, persistent rate
-limiting, financial constraints, service-request ownership and storage security.
+limiting, financial constraints, service-request ownership, storage security,
+native staff devices and persistent notifications.
 
 Do not skip older migrations on a fresh project. Supabase records which files
 have already been applied and only runs the missing migrations.
@@ -81,6 +82,7 @@ supabase functions deploy extract-menu-items
 supabase functions deploy send-marketing-campaign
 supabase functions deploy send-order-receipt
 supabase functions deploy send-otp-whatsapp --no-verify-jwt
+supabase functions deploy send-staff-push
 ```
 
 `send-order-receipt` formats a branded receipt and sends it when a customer has
@@ -161,7 +163,7 @@ src/
   app/admin/                 # venue operations, CRM, menu, intelligence, staff and settings
   components/                # customer/staff/admin/onboarding UI split by surface
 supabase/
-  migrations/                # schema, RLS, triggers and RPCs through migration 0026
+  migrations/                # schema, RLS, triggers and RPCs through migration 0027
   functions/                 # AI extraction, WhatsApp campaigns, receipts and OTP
 ```
 
@@ -195,6 +197,42 @@ once-off setup and onboarding**, or **R8,990/year**. A limited Founding Venue
 offer is displayed as **R599/month plus R1,500 setup for 12 months**. TableFlow
 does not charge per order or take a percentage of restaurant revenue. Variable
 third-party WhatsApp usage may be billed separately.
+
+## Capacitor staff application
+
+TableFlow remains a hosted Next.js application. Capacitor wraps the deployed
+staff/admin routes; it does not use static export or duplicate business logic.
+The guest QR menu remains a normal web experience.
+
+Before a native release:
+
+1. Replace the documented placeholder `com.example.tableflow` in
+  `capacitor.config.ts` and the generated Android/iOS projects with your
+  registered reverse-domain identifier.
+2. Set `TABLEFLOW_APP_URL=https://your-production-domain` before running
+  `npm run cap:sync`. Production must use HTTPS.
+3. Add Firebase's `google-services.json` to `android/app/` and configure the
+  matching Android application in Firebase Cloud Messaging.
+4. For iOS, enable Push Notifications and Background Modes/Remote notifications
+  for the Xcode target.
+5. Configure these Supabase Edge Function secrets:
+
+```text
+FCM_PROJECT_ID
+FCM_CLIENT_EMAIL
+FCM_PRIVATE_KEY
+APNS_KEY_ID
+APNS_TEAM_ID
+APNS_PRIVATE_KEY
+APNS_BUNDLE_ID
+APNS_USE_SANDBOX=true # development only
+```
+
+Then use `npm run cap:sync`, `npm run cap:android` or `npm run cap:ios`.
+The native app requests permission only inside authenticated staff/admin UI.
+Android uses the high-priority `tableflow_alerts` channel with default sound;
+iOS requests default APNs sound. Realtime foreground alerts use the staff sound
+toggle. Device silent/focus settings can still silence operating-system alerts.
 
 ## Dependency notes
 

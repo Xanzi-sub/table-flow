@@ -63,9 +63,9 @@ export default function Home() {
       `}</style>
 
       <header className="relative z-20 border-b border-[var(--landing-line)] bg-[#F7F8F4]/95">
-        <div className="mx-auto flex h-[76px] max-w-[1240px] items-center justify-between px-5 lg:px-8">
+        <div className="mx-auto flex h-[92px] max-w-[1240px] items-center justify-between px-5 lg:px-8">
           <Link href="/" aria-label="TableFlow home">
-            <Image src="/images/table-flow-logo.png" alt="TableFlow" width={2172} height={724} priority className="h-8 w-auto sm:h-9" />
+            <Image src="/images/table-flow-logo.png" alt="TableFlow" width={2172} height={724} priority className="h-12 w-auto sm:h-14" />
           </Link>
 
           <nav aria-label="Main navigation" className="hidden items-center gap-7 md:flex">
@@ -275,7 +275,7 @@ export default function Home() {
 
       <footer className="bg-[#111611] text-white">
         <div className="mx-auto flex max-w-[1240px] flex-col gap-6 px-5 py-7 sm:flex-row sm:items-center sm:justify-between lg:px-8">
-          <Image src="/images/table-flow-logo.png" alt="TableFlow" width={2172} height={724} className="h-7 w-auto brightness-0 invert" />
+          <Image src="/images/table-flow-logo.png" alt="TableFlow" width={2172} height={724} className="h-10 w-auto brightness-0 invert" />
           <p className="text-xs text-white/45">© 2026 TableFlow · Restaurant operations and guest growth</p>
           <div className="flex gap-5 text-xs font-semibold text-white/65"><Link href="#pricing" className="hover:text-white">Pricing</Link><Link href="/staff/login" className="hover:text-white">Staff sign in</Link></div>
         </div>

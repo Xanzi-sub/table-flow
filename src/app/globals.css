@@ -2,26 +2,26 @@
 
 :root {
   /* ---- Neutrals (cool slate-gray — enterprise ops software, not startup) ---- */
-  --gray-25: #fbfcfd;
-  --gray-50: #f5f6f8;
-  --gray-100: #eef0f3;
-  --gray-200: #dfe2e6;
-  --gray-300: #c5cad3;
-  --gray-400: #9aa2b1;
-  --gray-500: #6b7385;
-  --gray-600: #555c66;
-  --gray-700: #363c4a;
-  --gray-800: #232733;
-  --gray-900: #171a20;
-  --gray-950: #0b0c11;
+  --gray-25: #fcfdfe;
+  --gray-50: #f8fafc;
+  --gray-100: #f1f5f9;
+  --gray-200: #e2e8f0;
+  --gray-300: #cbd5e1;
+  --gray-400: #94a3b8;
+  --gray-500: #64748b;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --gray-800: #1e293b;
+  --gray-900: #0f172a;
+  --gray-950: #020617;
 
   /* ---- Brand accent: confident, vivid blue ---- */
-  --accent-50: #eef2ff;
+  --accent-50: #eff6ff;
   --accent-100: #dbeafe;
   --accent-200: #b4d4fb;
-  --accent-500: #2f5cff;
-  --accent-600: #2454d6;
-  --accent-700: #1d3fa6;
+  --accent-500: #2563eb;
+  --accent-600: #1d4ed8;
+  --accent-700: #1d4ed8;
 
   /* ---- Semantic status colors ---- */
   --success-50: #ecfdf3;
@@ -137,7 +137,8 @@ body {
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.03);
 }
 
 .btn {

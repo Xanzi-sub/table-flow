@@ -3,294 +3,224 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import type { UserRole } from "@/types/database";
+import { useCallback, useMemo, useState, useTransition } from "react";
+import type { LucideIcon } from "lucide-react";
+import {
+  AlertCircle,
+  Check,
+  ClipboardList,
+  DollarSign,
+  LayoutGrid,
+  LogOut,
+  Menu as MenuIcon,
+  QrCode,
+  Settings,
+  Sparkles,
+  Tag,
+  Table2,
+  TrendingUp,
+  Users,
+  UtensilsCrossed,
+  X,
+} from "lucide-react";
 import { signOutStaff } from "@/app/actions/auth";
 import { toggleCheckIn } from "@/app/actions/tables";
 import { formatStaffName } from "@/lib/utils";
+import type { UserRole } from "@/types/database";
 
 interface NavItem {
   href: string;
   label: string;
   roles: UserRole[];
-  section?: "operations" | "management";
+  section: "operations" | "management";
+  icon: LucideIcon;
+}
+
+interface ToastState {
+  type: "success" | "error";
+  message: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  {
-    href: "/staff/dashboard",
-    label: "Live Floor",
-    roles: ["waiter", "manager", "admin"],
-    section: "operations",
-  },
-  {
-    href: "/staff/orders",
-    label: "Orders",
-    roles: ["waiter"],
-    section: "operations",
-  },
-  {
-    href: "/staff/tips",
-    label: "Tips",
-    roles: ["waiter"],
-    section: "operations",
-  },
-  {
-    href: "/admin/tables",
-    label: "Tables & QR",
-    roles: ["manager", "admin"],
-    section: "operations",
-  },
-  {
-    href: "/admin/orders",
-    label: "Orders",
-    roles: ["manager", "admin"],
-    section: "operations",
-  },
-  {
-    href: "/admin/customers",
-    label: "Customers",
-    roles: ["manager", "admin"],
-    section: "operations",
-  },
-  {
-    href: "/admin/tips",
-    label: "Tips Cashouts",
-    roles: ["manager", "admin"],
-    section: "operations",
-  },
-  {
-    href: "/admin/menu",
-    label: "Menu",
-    roles: ["manager", "admin"],
-    section: "management",
-  },
-  {
-    href: "/admin/specials",
-    label: "Specials",
-    roles: ["manager", "admin"],
-    section: "management",
-  },
-  {
-    href: "/admin/menu-scan",
-    label: "Menu Scan",
-    roles: ["manager", "admin"],
-    section: "management",
-  },
-  {
-    href: "/staff/marketing",
-    label: "Marketing",
-    roles: ["manager", "admin"],
-    section: "management",
-  },
-  {
-    href: "/admin/analytics",
-    label: "Intelligence",
-    roles: ["manager", "admin"],
-    section: "management",
-  },
-  {
-    href: "/admin/staff",
-    label: "Staff",
-    roles: ["manager", "admin"],
-    section: "management",
-  },
-  {
-    href: "/admin/settings",
-    label: "Settings",
-    roles: ["manager", "admin"],
-    section: "management",
-  },
+  { href: "/staff/dashboard", label: "Live Floor", roles: ["waiter", "manager", "admin"], section: "operations", icon: LayoutGrid },
+  { href: "/staff/orders", label: "Orders", roles: ["waiter"], section: "operations", icon: ClipboardList },
+  { href: "/staff/tips", label: "Tips", roles: ["waiter"], section: "operations", icon: DollarSign },
+  { href: "/admin/tables", label: "Tables & QR", roles: ["manager", "admin"], section: "operations", icon: Table2 },
+  { href: "/admin/orders", label: "Orders", roles: ["manager", "admin"], section: "operations", icon: ClipboardList },
+  { href: "/admin/customers", label: "Customers", roles: ["manager", "admin"], section: "operations", icon: Users },
+  { href: "/admin/tips", label: "Tips Cashouts", roles: ["manager", "admin"], section: "operations", icon: DollarSign },
+  { href: "/admin/menu", label: "Menu", roles: ["manager", "admin"], section: "management", icon: UtensilsCrossed },
+  { href: "/admin/specials", label: "Specials", roles: ["manager", "admin"], section: "management", icon: Tag },
+  { href: "/admin/menu-scan", label: "Menu Scan", roles: ["manager", "admin"], section: "management", icon: QrCode },
+  { href: "/staff/marketing", label: "Marketing", roles: ["manager", "admin"], section: "management", icon: TrendingUp },
+  { href: "/admin/analytics", label: "Intelligence", roles: ["manager", "admin"], section: "management", icon: Sparkles },
+  { href: "/admin/staff", label: "Staff", roles: ["manager", "admin"], section: "management", icon: Users },
+  { href: "/admin/settings", label: "Settings", roles: ["manager", "admin"], section: "management", icon: Settings },
 ];
 
-/* -------------------------------------------------------------------------- */
-/* Icons                                                                       */
-/* -------------------------------------------------------------------------- */
+const PAGE_TITLES: Record<string, string> = Object.fromEntries(
+  NAV_ITEMS.map(({ href, label }) => [href, label])
+);
 
-type IconName =
-  | "floor"
-  | "orders"
-  | "tables"
-  | "customers"
-  | "tips"
-  | "menu"
-  | "scan"
-  | "marketing"
-  | "analytics"
-  | "staff"
-  | "settings"
-  | "close"
-  | "chevron"
-  | "logout";
-
-function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
-  const common = {
-    width: size,
-    height: size,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 1.7,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-  };
-
-  switch (name) {
-    case "floor":
-      return (
-        <svg {...common}>
-          <rect x="3" y="3" width="7" height="7" rx="1" />
-          <rect x="14" y="3" width="7" height="7" rx="1" />
-          <rect x="3" y="14" width="7" height="7" rx="1" />
-          <rect x="14" y="14" width="7" height="7" rx="1" />
-        </svg>
-      );
-
-    case "orders":
-      return (
-        <svg {...common}>
-          <path d="M6 3h12a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
-          <path d="M8 7h8M8 11h8M8 15h5" />
-        </svg>
-      );
-
-    case "tables":
-      return (
-        <svg {...common}>
-          <rect x="4" y="5" width="16" height="14" rx="1.5" />
-          <path d="M4 10h16M10 5v14M14 5v14" />
-        </svg>
-      );
-
-    case "customers":
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="8" r="3.5" />
-          <path d="M5 21c.7-4 3-6 7-6s6.3 2 7 6" />
-        </svg>
-      );
-
-    case "tips":
-      return (
-        <svg {...common}>
-          <circle cx="8" cy="9" r="5" />
-          <circle cx="15" cy="15" r="5" />
-          <path d="M8 9h.01M15 15h.01" />
-        </svg>
-      );
-
-    case "menu":
-      return (
-        <svg {...common}>
-          <path d="M5 4h14M5 8h14M5 12h9M5 16h14M5 20h14" />
-        </svg>
-      );
-
-    case "scan":
-      return (
-        <svg {...common}>
-          <path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3" />
-          <rect x="8" y="8" width="8" height="8" rx="1" />
-        </svg>
-      );
-
-    case "marketing":
-      return (
-        <svg {...common}>
-          <path d="m4 13 7-7 9 9-7 7-9-9Z" />
-          <path d="m13 7 4-4 4 4-4 4" />
-          <path d="M7 17h.01" />
-        </svg>
-      );
-
-    case "analytics":
-      return (
-        <svg {...common}>
-          <path d="M4 19V5M4 19h16" />
-          <path d="m7 15 3-4 3 2 5-7" />
-        </svg>
-      );
-
-    case "staff":
-      return (
-        <svg {...common}>
-          <circle cx="9" cy="8" r="3" />
-          <path d="M3.5 20c.5-3.3 2.3-5 5.5-5s5 1.7 5.5 5" />
-          <path d="M16 5.5a3 3 0 0 1 0 5.8M16.5 15c2.2.2 3.7 1.8 4 4" />
-        </svg>
-      );
-
-    case "settings":
-      return (
-        <svg {...common}>
-          <circle cx="12" cy="12" r="3" />
-          <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.7 1.7-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.1h-2.4v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L8 17l.1-.1A1.7 1.7 0 0 0 8.4 15a1.7 1.7 0 0 0-1.6-1H6v-2.4h.1a1.7 1.7 0 0 0 1.6-1A1.7 1.7 0 0 0 8.1 9L8 8.9l1.7-1.7.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6v-.1h2.4V6a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 9l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1v2.4H21a1.7 1.7 0 0 0-1.6.6Z" />
-        </svg>
-      );
-
-    case "close":
-      return (
-        <svg {...common}>
-          <path d="m6 6 12 12M18 6 6 18" />
-        </svg>
-      );
-
-    case "chevron":
-      return (
-        <svg {...common}>
-          <path d="m9 18 6-6-6-6" />
-        </svg>
-      );
-
-    case "logout":
-      return (
-        <svg {...common}>
-          <path d="M10 5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h4" />
-          <path d="M14 8l4 4-4 4M18 12H9" />
-        </svg>
-      );
-  }
+function Toast({ type, message }: ToastState) {
+  const success = type === "success";
+  const Icon = success ? Check : AlertCircle;
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className={`fixed bottom-4 right-4 z-[70] flex max-w-[calc(100vw-2rem)] items-center gap-3 rounded-md border px-4 py-3 shadow-lg ${
+        success
+          ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+          : "border-red-200 bg-red-50 text-red-900"
+      }`}
+    >
+      <Icon className="h-4 w-4 shrink-0" />
+      <p className="text-sm font-semibold">{message}</p>
+    </div>
+  );
 }
 
-/* -------------------------------------------------------------------------- */
-/* Navigation icon mapping                                                    */
-/* -------------------------------------------------------------------------- */
-
-function getNavIcon(label: string): IconName {
-  switch (label) {
-    case "Live Floor":
-      return "floor";
-    case "Orders":
-      return "orders";
-    case "Tables & QR":
-      return "tables";
-    case "Customers":
-      return "customers";
-    case "Tips":
-    case "Tips Cashouts":
-      return "tips";
-    case "Menu":
-    case "Specials":
-      return "menu";
-    case "Menu Scan":
-      return "scan";
-    case "Marketing":
-      return "marketing";
-    case "Analytics":
-    case "Intelligence":
-      return "analytics";
-    case "Staff":
-      return "staff";
-    case "Settings":
-      return "settings";
-    default:
-      return "floor";
-  }
+function UserAvatar({ displayName, compact = false }: { displayName: string; compact?: boolean }) {
+  const initials = displayName
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+  return (
+    <span
+      aria-label={displayName}
+      className={`flex shrink-0 items-center justify-center rounded-full bg-slate-100 font-bold text-slate-700 ${
+        compact ? "h-7 w-7 text-[9px]" : "h-9 w-9 text-[10px]"
+      }`}
+    >
+      {initials}
+    </span>
+  );
 }
 
-/* -------------------------------------------------------------------------- */
-/* Shell                                                                       */
-/* -------------------------------------------------------------------------- */
+function DutyToggle({
+  staffId,
+  isCheckedIn,
+  compact = false,
+  onStatusChange,
+}: {
+  staffId: string;
+  isCheckedIn: boolean;
+  compact?: boolean;
+  onStatusChange: (toast: ToastState) => void;
+}) {
+  const [checkedIn, setCheckedIn] = useState(isCheckedIn);
+  const [pending, startTransition] = useTransition();
+
+  function handleToggle() {
+    const next = !checkedIn;
+    setCheckedIn(next);
+    startTransition(async () => {
+      const result = await toggleCheckIn(staffId, next);
+      if (!result.success) {
+        setCheckedIn(!next);
+        onStatusChange({ type: "error", message: "Failed to update duty status" });
+        return;
+      }
+      onStatusChange({ type: "success", message: next ? "You're now on duty" : "You're now off duty" });
+    });
+  }
+
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={handleToggle}
+        disabled={pending}
+        className="flex h-9 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50"
+      >
+        <span className={`h-2 w-2 rounded-full ${checkedIn ? "bg-emerald-500" : "bg-slate-400"}`} />
+        {pending ? "Updating" : checkedIn ? "On duty" : "Off duty"}
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleToggle}
+      disabled={pending}
+      className="flex w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-3 text-left transition-colors hover:bg-slate-50 disabled:opacity-60"
+    >
+      <div className="flex items-center gap-2.5">
+        <span className={`h-2 w-2 rounded-full ${checkedIn ? "bg-emerald-500" : "bg-slate-400"}`} />
+        <div>
+          <p className="text-xs font-semibold text-slate-700">{checkedIn ? "On duty" : "Off duty"}</p>
+          <p className="mt-0.5 text-[11px] text-slate-500">{checkedIn ? "Receiving tables" : "Not receiving tables"}</p>
+        </div>
+      </div>
+      <span className="text-[11px] text-slate-500">{pending ? "..." : "Change"}</span>
+    </button>
+  );
+}
+
+function NavigationGroup({
+  label,
+  items,
+  isActive,
+  onNavigate,
+}: {
+  label: string;
+  items: NavItem[];
+  isActive: (href: string) => boolean;
+  onNavigate?: () => void;
+}) {
+  return (
+    <nav aria-label={label}>
+      <h2 className="mb-2 px-3 text-[11px] font-bold uppercase text-slate-400">{label}</h2>
+      <div className="space-y-1">
+        {items.map((item) => {
+          const active = isActive(item.href);
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onNavigate}
+              aria-current={active ? "page" : undefined}
+              className={`group flex h-11 items-center gap-3 rounded-md px-3 text-sm font-semibold transition-colors ${
+                active
+                  ? "bg-blue-50 text-blue-700"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              }`}
+            >
+              <Icon className={`h-5 w-5 shrink-0 ${active ? "text-blue-700" : "text-slate-400 group-hover:text-slate-600"}`} />
+              <span className="flex-1">{item.label}</span>
+              {active && <span className="h-2 w-2 rounded-full bg-blue-700" />}
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
+function VenueIdentity({ venueName, venueLogoUrl, mobile = false }: { venueName?: string | null; venueLogoUrl?: string | null; mobile?: boolean }) {
+  const size = mobile ? 34 : 38;
+  return (
+    <div className="flex min-w-0 items-center gap-3">
+      {venueLogoUrl ? (
+        <Image src={venueLogoUrl} alt={venueName ?? "Venue logo"} width={size} height={size} className={`${mobile ? "h-[34px] w-[34px]" : "h-[38px] w-[38px]"} shrink-0 rounded-md border border-slate-200 object-cover`} priority={!mobile} />
+      ) : (
+        <span className={`${mobile ? "h-[34px] w-[34px]" : "h-[38px] w-[38px]"} flex shrink-0 items-center justify-center rounded-md bg-slate-900 text-xs font-bold text-white`}>
+          {(venueName ?? "TF").slice(0, 2).toUpperCase()}
+        </span>
+      )}
+      <div className="min-w-0">
+        <p className="truncate text-sm font-bold text-slate-900">{venueName ?? "TableFlow"}</p>
+        <p className="mt-0.5 text-[10px] font-semibold uppercase text-slate-400">Restaurant operations</p>
+      </div>
+    </div>
+  );
+}
 
 export function StaffShell({
   role,
@@ -310,424 +240,107 @@ export function StaffShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-
-  const items = NAV_ITEMS.filter((item) => item.roles.includes(role));
-
   const [navOpen, setNavOpen] = useState(false);
-  const [checkedIn, setCheckedIn] = useState(isCheckedIn);
-  const [togglingDuty, setTogglingDuty] = useState(false);
-
-  async function handleDutyToggle() {
-    const next = !checkedIn;
-
-    setTogglingDuty(true);
-    setCheckedIn(next);
-
-    const result = await toggleCheckIn(staffId, next);
-
-    setTogglingDuty(false);
-
-    if (!result.success) {
-      setCheckedIn(!next);
-    }
-  }
-
-  // Exact match or a real sub-path (next char is "/") — plain startsWith()
-  // wrongly matched "/admin/menu-scan" against the "/admin/menu" link too.
-  function isActive(href: string) {
-    return pathname === href || pathname.startsWith(`${href}/`);
-  }
-
+  const [toast, setToast] = useState<ToastState | null>(null);
   const displayName = formatStaffName(fullName);
-  const initials = displayName
-    .split(" ")
-    .filter(Boolean)
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  const items = useMemo(() => NAV_ITEMS.filter((item) => item.roles.includes(role)), [role]);
+  const operations = useMemo(() => items.filter((item) => item.section === "operations"), [items]);
+  const management = useMemo(() => items.filter((item) => item.section === "management"), [items]);
 
-  const operations = items.filter((item) => item.section === "operations");
-  const management = items.filter((item) => item.section === "management");
+  const isActive = useCallback(
+    (href: string) => pathname === href || pathname.startsWith(`${href}/`),
+    [pathname]
+  );
+
+  const pageTitle = useMemo(() => {
+    const match = Object.entries(PAGE_TITLES).find(([path]) => pathname === path || pathname.startsWith(`${path}/`));
+    return match?.[1] ?? "TableFlow";
+  }, [pathname]);
+
+  const showToast = useCallback((nextToast: ToastState) => {
+    setToast(nextToast);
+    window.setTimeout(() => setToast(null), 3000);
+  }, []);
+
+  const navigation = (onNavigate?: () => void) => (
+    <div className="space-y-7">
+      {operations.length > 0 && <NavigationGroup label="Operations" items={operations} isActive={isActive} onNavigate={onNavigate} />}
+      {management.length > 0 && <NavigationGroup label="Management" items={management} isActive={isActive} onNavigate={onNavigate} />}
+    </div>
+  );
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[#F5F6F8] text-[#171A20] xl:flex-row">
-      {/* ------------------------------------------------------------------ */}
-      {/* Desktop sidebar                                                     */}
-      {/* ------------------------------------------------------------------ */}
-
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[280px] flex-col border-r border-[#DFE2E6] bg-[#FFFFFF] xl:flex">
-        {/* Brand */}
-        <div className="flex h-[68px] items-center border-b border-[#E5E7EA] px-5">
-          <div className="flex min-w-0 items-center gap-3">
-            {venueLogoUrl ? (
-              <Image
-                src={venueLogoUrl}
-                alt={venueName ?? "Venue logo"}
-                width={34}
-                height={34}
-                className="h-[34px] w-[34px] shrink-0 rounded-[6px] border border-[#DDE1E5] object-cover"
-              />
-            ) : (
-              <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[6px] bg-[#171A20] text-[10px] font-bold tracking-wide text-white">
-                {(venueName ?? "TF").slice(0, 2).toUpperCase()}
-              </span>
-            )}
-
-            <div className="min-w-0">
-              <div className="truncate text-[12px] font-semibold tracking-[-0.01em] text-[#171A20]">
-                {venueName ?? "TableFlow"}
-              </div>
-
-              <div className="mt-0.5 text-[8px] font-medium uppercase tracking-[0.12em] text-[#949AA3]">
-                Point of Sale
-              </div>
-            </div>
-          </div>
+    <div className="flex min-h-dvh flex-col bg-slate-50 text-slate-900 xl:flex-row">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 flex-col border-r border-slate-200 bg-white xl:flex">
+        <div className="flex h-[72px] items-center border-b border-slate-200 px-5">
+          <VenueIdentity venueName={venueName} venueLogoUrl={venueLogoUrl} />
         </div>
-
-        {/* Navigation */}
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
-          {operations.length > 0 && (
-            <NavigationGroup label="Operations" items={operations} isActive={isActive} />
-          )}
-
-          {management.length > 0 && (
-            <div className="mt-7">
-              <NavigationGroup label="Management" items={management} isActive={isActive} />
-            </div>
-          )}
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5">{navigation()}</div>
+        <div className="flex justify-center border-t border-slate-200 py-3">
+          <Image src="/images/table-flow-logo.png" alt="TableFlow" width={2172} height={724} className="h-16 w-auto opacity-70" />
         </div>
-
-        {/* Brand logo */}
-        <div className="flex justify-center border-t border-[#E3E5E8] py-4">
-          <Image
-            src="/images/table-flow-logo.png"
-            alt="TableFlow"
-            width={2172}
-            height={724}
-            className="h-16 w-auto opacity-70"
-          />
-        </div>
-
-        {/* Bottom user area */}
-        <div className="border-t border-[#E3E5E8] p-3">
-          {role === "waiter" && (
-            <button
-              onClick={handleDutyToggle}
-              disabled={togglingDuty}
-              className="mb-2 flex w-full items-center justify-between border border-[#E0E3E7] bg-[#FAFBFC] px-3 py-2.5 text-left transition-colors hover:bg-[#F4F5F7] disabled:opacity-60"
-            >
-              <div className="flex items-center gap-2.5">
-                <span className={`h-2 w-2 rounded-full ${checkedIn ? "bg-emerald-500" : "bg-[#B7BCC4]"}`} />
-
-                <div>
-                  <div className="text-[10px] font-semibold text-[#353A42]">
-                    {checkedIn ? "On duty" : "Off duty"}
-                  </div>
-
-                  <div className="mt-0.5 text-[8px] text-[#959BA4]">
-                    {checkedIn ? "Receiving tables" : "Not receiving tables"}
-                  </div>
-                </div>
-              </div>
-
-              <span className="text-[9px] text-[#8C929B]">{togglingDuty ? "..." : "Change"}</span>
-            </button>
-          )}
-
-          <div className="flex items-center gap-2.5 px-2 py-2">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EEF0F3] text-[9px] font-bold text-[#515862]">
-              {initials}
-            </span>
-
+        <div className="space-y-3 border-t border-slate-200 p-4">
+          {role === "waiter" && <DutyToggle staffId={staffId} isCheckedIn={isCheckedIn} onStatusChange={showToast} />}
+          <div className="flex items-center gap-3 px-2 py-2">
+            <UserAvatar displayName={displayName} />
             <div className="min-w-0 flex-1">
-              <div className="truncate text-[10px] font-semibold text-[#30353D]">{displayName}</div>
-
-              <div className="mt-0.5 text-[8px] capitalize text-[#969BA4]">{role}</div>
+              <p className="truncate text-xs font-bold text-slate-900">{displayName}</p>
+              <p className="mt-0.5 text-xs capitalize text-slate-500">{role}</p>
             </div>
-
             <form action={signOutStaff}>
-              <button
-                type="submit"
-                title="Sign out"
-                className="flex h-7 w-7 items-center justify-center text-[#9298A1] transition-colors hover:bg-[#F1F2F4] hover:text-[#30353D]"
-              >
-                <Icon name="logout" size={14} />
+              <button type="submit" aria-label="Sign out" title="Sign out" className="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-900">
+                <LogOut className="h-4 w-4" />
               </button>
             </form>
           </div>
         </div>
       </aside>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Mobile / tablet top header                                          */}
-      {/* ------------------------------------------------------------------ */}
-
-      <header className="sticky top-0 z-30 flex h-[64px] w-full items-center justify-between border-b border-[#DFE2E6] bg-white px-4 xl:hidden">
-        <div className="flex min-w-0 items-center gap-2.5">
-          {venueLogoUrl ? (
-            <Image
-              src={venueLogoUrl}
-              alt={venueName ?? "Venue logo"}
-              width={32}
-              height={32}
-              className="h-8 w-8 shrink-0 rounded-[6px] border border-[#DDE1E5] object-cover"
-            />
-          ) : (
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[6px] bg-[#171A20] text-[9px] font-bold text-white">
-              {(venueName ?? "TF").slice(0, 2).toUpperCase()}
-            </span>
-          )}
-
-          <div className="min-w-0">
-            <div className="truncate text-[12px] font-semibold text-[#171A20]">
-              {venueName ?? "TableFlow"}
-            </div>
-
-            <div className="text-[8px] uppercase tracking-[0.1em] text-[#969BA4]">Point of Sale</div>
-          </div>
-        </div>
-
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 xl:hidden">
+        <VenueIdentity venueName={venueName} venueLogoUrl={venueLogoUrl} mobile />
         <div className="flex items-center gap-2">
-          {role === "waiter" && (
-            <button
-              onClick={handleDutyToggle}
-              disabled={togglingDuty}
-              className="flex h-8 items-center gap-2 border border-[#DDE1E5] bg-white px-2.5 text-[9px] font-semibold"
-            >
-              <span className={`h-1.5 w-1.5 rounded-full ${checkedIn ? "bg-emerald-500" : "bg-[#B7BCC4]"}`} />
-
-              {checkedIn ? "On duty" : "Off duty"}
-            </button>
-          )}
-
-          <button
-            onClick={() => setNavOpen((value) => !value)}
-            aria-label="Toggle navigation"
-            className="flex h-8 w-8 items-center justify-center border border-[#DDE1E5] bg-white text-[#555C66]"
-          >
-            {navOpen ? (
-              <Icon name="close" size={16} />
-            ) : (
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
-                <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
-              </svg>
-            )}
+          {role === "waiter" && <DutyToggle staffId={staffId} isCheckedIn={isCheckedIn} compact onStatusChange={showToast} />}
+          <button type="button" onClick={() => setNavOpen(true)} aria-label="Open navigation" className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50">
+            <MenuIcon className="h-4 w-4" />
           </button>
         </div>
       </header>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Mobile navigation overlay                                           */}
-      {/* ------------------------------------------------------------------ */}
-
       {navOpen && (
         <>
-          <button
-            aria-label="Close navigation"
-            onClick={() => setNavOpen(false)}
-            className="fixed inset-0 z-40 bg-black/20 xl:hidden"
-          />
-
-          <aside className="fixed inset-y-0 left-0 z-50 flex w-[320px] max-w-[92vw] flex-col border-r border-[#DFE2E6] bg-white xl:hidden">
-            <div className="flex h-[64px] items-center justify-between border-b border-[#E3E5E8] px-4">
-              <span className="text-[14px] font-semibold uppercase tracking-[0.12em] text-[#777D86]">
-                Navigation
-              </span>
-
-              <button
-                onClick={() => setNavOpen(false)}
-                className="flex h-9 w-9 items-center justify-center text-[#777D86]"
-              >
-                <Icon name="close" size={20} />
-              </button>
+          <button type="button" onClick={() => setNavOpen(false)} aria-label="Close navigation" className="fixed inset-0 z-40 bg-slate-950/35 xl:hidden" />
+          <aside className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[90vw] flex-col border-r border-slate-200 bg-white xl:hidden">
+            <div className="flex h-16 items-center justify-between border-b border-slate-200 px-4">
+              <span className="text-xs font-bold uppercase text-slate-500">Navigation</span>
+              <button type="button" onClick={() => setNavOpen(false)} aria-label="Close navigation" className="flex h-9 w-9 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100"><X className="h-5 w-5" /></button>
             </div>
-
-            <div className="flex-1 overflow-y-auto px-4 py-5">
-              {operations.length > 0 && (
-                <NavigationGroup
-                  label="Operations"
-                  items={operations}
-                  isActive={isActive}
-                  onNavigate={() => setNavOpen(false)}
-                />
-              )}
-
-              {management.length > 0 && (
-                <div className="mt-7">
-                  <NavigationGroup
-                    label="Management"
-                    items={management}
-                    isActive={isActive}
-                    onNavigate={() => setNavOpen(false)}
-                  />
-                </div>
-              )}
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5">{navigation(() => setNavOpen(false))}</div>
+            <div className="flex justify-center border-t border-slate-200 py-3">
+              <Image src="/images/table-flow-logo.png" alt="TableFlow" width={2172} height={724} className="h-16 w-auto opacity-70" />
             </div>
-
-            <div className="flex justify-center border-t border-[#E3E5E8] py-4">
-              <Image
-                src="/images/table-flow-logo.png"
-                alt="TableFlow"
-                width={2172}
-                height={724}
-                className="h-16 w-auto opacity-70"
-              />
-            </div>
-
-            <div className="border-t border-[#E3E5E8] p-4">
-              <div className="mb-3 flex items-center gap-2.5">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#EEF0F3] text-[9px] font-bold text-[#515862]">
-                  {initials}
-                </span>
-
-                <div className="min-w-0">
-                  <div className="truncate text-[10px] font-semibold text-[#30353D]">{displayName}</div>
-
-                  <div className="mt-0.5 text-[8px] capitalize text-[#969BA4]">{role}</div>
-                </div>
-              </div>
-
-              <form action={signOutStaff}>
-                <button
-                  type="submit"
-                  className="flex h-9 w-full items-center justify-center gap-2 border border-[#DDE1E5] bg-white text-[9px] font-semibold text-[#555C66] hover:bg-[#F5F6F8]"
-                >
-                  <Icon name="logout" size={14} />
-                  Sign out
-                </button>
-              </form>
+            <div className="space-y-3 border-t border-slate-200 p-4">
+              <div className="flex items-center gap-3"><UserAvatar displayName={displayName} /><div className="min-w-0"><p className="truncate text-xs font-bold">{displayName}</p><p className="text-xs capitalize text-slate-500">{role}</p></div></div>
+              <form action={signOutStaff}><button type="submit" className="flex h-10 w-full items-center justify-center gap-2 rounded-md border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50"><LogOut className="h-4 w-4" />Sign out</button></form>
             </div>
           </aside>
         </>
       )}
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Main application area                                               */}
-      {/* ------------------------------------------------------------------ */}
-
-      <div className="flex min-h-dvh min-w-0 flex-1 flex-col xl:pl-[280px]">
-        {/* Desktop utility header */}
-        <div className="hidden h-[64px] items-center justify-between border-b border-[#DFE2E6] bg-white px-7 xl:flex">
-          <div>
-            <div className="text-[9px] font-medium uppercase tracking-[0.12em] text-[#9A9FA7]">
-              {venueName ?? "TableFlow"}
-            </div>
-
-            <div className="mt-0.5 text-[11px] font-semibold text-[#3A3F47]">{getPageTitle(pathname)}</div>
-          </div>
-
+      <div className="flex min-h-dvh min-w-0 flex-1 flex-col xl:pl-72">
+        <div className="hidden h-[72px] items-center justify-between border-b border-slate-200 bg-white px-7 xl:flex">
+          <div><p className="text-[11px] font-bold uppercase text-slate-400">{venueName ?? "TableFlow"}</p><p className="mt-1 text-sm font-bold text-slate-900">{pageTitle}</p></div>
           <div className="flex items-center gap-4">
-            {role === "waiter" && (
-              <button
-                onClick={handleDutyToggle}
-                disabled={togglingDuty}
-                className="flex items-center gap-2 border border-[#DDE1E5] bg-white px-3 py-2 text-[9px] font-semibold text-[#555C66] transition-colors hover:bg-[#F5F6F8]"
-              >
-                <span className={`h-1.5 w-1.5 rounded-full ${checkedIn ? "bg-emerald-500" : "bg-[#B7BCC4]"}`} />
-
-                {checkedIn ? "On duty" : "Off duty"}
-              </button>
-            )}
-
-            <div className="h-5 w-px bg-[#E1E3E6]" />
-
-            <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#EEF0F3] text-[8px] font-bold text-[#515862]">
-                {initials}
-              </span>
-
-              <div className="leading-none">
-                <div className="text-[9px] font-semibold text-[#3A3F47]">{displayName}</div>
-
-                <div className="mt-1 text-[7px] capitalize text-[#969BA4]">{role}</div>
-              </div>
-            </div>
-
-            <form action={signOutStaff}>
-              <button type="submit" className="text-[9px] font-medium text-[#858B95] transition-colors hover:text-[#171A20]">
-                Sign out
-              </button>
-            </form>
+            {role === "waiter" && <DutyToggle staffId={staffId} isCheckedIn={isCheckedIn} compact onStatusChange={showToast} />}
+            <div className="h-5 w-px bg-slate-200" />
+            <UserAvatar displayName={displayName} compact />
+            <div className="text-right"><p className="text-xs font-bold">{displayName}</p><p className="text-xs capitalize text-slate-500">{role}</p></div>
+            <form action={signOutStaff}><button type="submit" className="text-xs font-semibold text-slate-500 hover:text-slate-900">Sign out</button></form>
           </div>
         </div>
-
-        <main className="app-content w-full flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-7 lg:py-7">{children}</main>
+        <main className="app-content w-full flex-1 overflow-x-hidden px-4 py-5 sm:px-6 sm:py-6 lg:px-7 lg:py-7">{children}</main>
       </div>
+
+      {toast && <Toast {...toast} />}
     </div>
   );
-}
-
-/* -------------------------------------------------------------------------- */
-/* Navigation group                                                            */
-/* -------------------------------------------------------------------------- */
-
-function NavigationGroup({
-  label,
-  items,
-  isActive,
-  onNavigate,
-}: {
-  label: string;
-  items: NavItem[];
-  isActive: (href: string) => boolean;
-  onNavigate?: () => void;
-}) {
-  return (
-    <div>
-      <div className="mb-2 px-3 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#A0A5AD]">{label}</div>
-
-      <div className="space-y-1">
-        {items.map((item) => {
-          const active = isActive(item.href);
-          const iconName = getNavIcon(item.label);
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onNavigate}
-              className={`group flex h-[50px] items-center gap-3 px-3.5 text-[15px] font-medium transition-colors ${
-                active
-                  ? "bg-[#EEF2FF] text-[#2454D6]"
-                  : "text-[#626973] hover:bg-[#F5F6F8] hover:text-[#30353D]"
-              }`}
-            >
-              <span className={active ? "text-[#2454D6]" : "text-[#9298A1] group-hover:text-[#555C66]"}>
-                <Icon name={iconName} size={22} />
-              </span>
-
-              <span className="flex-1">{item.label}</span>
-
-              {active && <span className="h-2.5 w-2.5 rounded-full bg-[#2F5CFF]" />}
-            </Link>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/* Page title                                                                  */
-/* -------------------------------------------------------------------------- */
-
-function getPageTitle(pathname: string) {
-  if (pathname === "/staff/dashboard") return "Live Floor";
-  if (pathname.startsWith("/staff/orders")) return "Orders";
-  if (pathname.startsWith("/staff/tips")) return "Tips";
-  if (pathname.startsWith("/admin/tables")) return "Tables & QR";
-  if (pathname.startsWith("/admin/orders")) return "Orders";
-  if (pathname.startsWith("/admin/customers")) return "Customers";
-  if (pathname.startsWith("/admin/tips")) return "Tips Cashouts";
-  if (pathname.startsWith("/admin/menu-scan")) return "Menu Scan";
-  if (pathname.startsWith("/admin/specials")) return "Specials";
-  if (pathname.startsWith("/admin/menu")) return "Menu";
-  if (pathname.startsWith("/staff/marketing")) return "Marketing";
-  if (pathname.startsWith("/admin/analytics")) return "Intelligence";
-  if (pathname.startsWith("/admin/staff")) return "Staff";
-  if (pathname.startsWith("/admin/settings")) return "Settings";
-
-  return "TableFlow";
 }

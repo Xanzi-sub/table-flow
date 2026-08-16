@@ -488,11 +488,11 @@ function MenuBrowser({
             <section
               key={category.id}
               id={`category-${category.id}`}
-              className="mb-9 scroll-mt-24 last:mb-4"
+              className="mb-6 scroll-mt-24 last:mb-4 sm:mb-8"
             >
-              <div className="mb-3.5 flex items-end justify-between px-0.5">
+              <div className="mb-2 flex items-end justify-between px-0.5 sm:mb-3">
                 <div>
-                  <h2 className="text-[19px] font-bold tracking-[-0.02em] text-neutral-950">
+                  <h2 className="text-[17px] font-bold tracking-[-0.02em] text-neutral-950 sm:text-[19px]">
                     {category.name}
                   </h2>
 
@@ -505,7 +505,7 @@ function MenuBrowser({
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2.5">
+              <div className="flex flex-col">
                 {catItems.map((item) => (
                   <MenuItemCard
                     key={item.id}

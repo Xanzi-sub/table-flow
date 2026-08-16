@@ -23,30 +23,30 @@ export function MenuItemCard({
 
   return (
     <article
-      className="group flex w-full cursor-pointer gap-4 py-5 text-left transition-opacity active:opacity-75"
+      className="group flex min-h-[100px] w-full cursor-pointer gap-3 border-b border-neutral-100 py-2.5 text-left transition-opacity last:border-b-0 active:opacity-75 sm:gap-4 sm:py-3"
       onClick={() => onSelect(item)}
     >
       {/* Food image */}
-      <div className="relative h-[104px] w-[104px] shrink-0 overflow-hidden rounded-[18px] bg-[#f1eee9]">
+      <div className="relative h-[82px] w-[82px] shrink-0 overflow-hidden rounded-[14px] bg-[#f1eee9] sm:h-[92px] sm:w-[92px]">
         {item.image_url ? (
           <Image
             src={item.image_url}
             alt={item.name}
             fill
-            sizes="104px"
+            sizes="(max-width: 639px) 82px, 92px"
             className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-neutral-300">
-            <PlateIcon className="h-8 w-8" />
+            <PlateIcon className="h-7 w-7" />
           </div>
         )}
       </div>
 
       {/* Information */}
-      <div className="min-w-0 flex-1 py-0.5">
+      <div className="min-w-0 flex-1">
         {offer && (
-          <span className="mb-1.5 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] text-amber-800">
+          <span className="mb-1 inline-flex max-w-full truncate rounded-full bg-amber-100 px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-amber-800">
             {offer.discountType === "quantity_deal"
               ? `${offer.specialName} · Buy ${offer.buyQuantity}, pay ${offer.payQuantity}`
               : offer.discountType === "fixed_price"
@@ -55,20 +55,20 @@ export function MenuItemCard({
           </span>
         )}
         <div className="flex items-start justify-between gap-3">
-          <h3 className="pr-2 text-[15px] font-semibold leading-[1.25] tracking-[-0.01em] text-[#171614]">
+          <h3 className="line-clamp-2 pr-1 text-[14px] font-semibold leading-[1.2] tracking-[-0.01em] text-[#171614] sm:text-[15px]">
             {item.name}
           </h3>
         </div>
 
         {item.description && (
-          <p className="mt-1.5 line-clamp-2 max-w-[270px] text-[13px] leading-[1.45] text-[#77736d]">
+          <p className="mt-1 line-clamp-1 max-w-[270px] text-[11px] leading-[1.35] text-[#77736d] sm:line-clamp-2 sm:text-[12px]">
             {item.description}
           </p>
         )}
 
-        <div className="mt-3 flex items-center justify-between gap-3">
+        <div className="mt-1.5 flex items-end justify-between gap-2 sm:mt-2">
           <span>
-            <span className="text-[14px] font-semibold tracking-[-0.01em] text-[#171614]">
+            <span className="text-[13px] font-semibold tracking-[-0.01em] text-[#171614] sm:text-[14px]">
               {formatCurrency(offer?.unitPrice ?? item.price)}
             </span>
             {offer && offer.discountType === "percentage" && (
@@ -80,7 +80,7 @@ export function MenuItemCard({
             type="button"
             aria-label={`Add ${item.name} to your order`}
             onClick={handleQuickAdd}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--accent-500)] text-white shadow-[0_3px_10px_rgba(23,76,58,0.18)] transition-all duration-200 hover:scale-105 hover:bg-[var(--accent-600)] active:scale-90"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--accent-500)] text-white shadow-[0_3px_10px_rgba(23,76,58,0.18)] transition-all duration-200 hover:scale-105 hover:bg-[var(--accent-600)] active:scale-90 sm:h-9 sm:w-9"
           >
             <svg
               width="17"

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "396436977429",
+    "project_id": "tableflow-efda1",
+    "storage_bucket": "tableflow-efda1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:396436977429:android:2ddb7dc812f87f6237db1c",
+        "android_client_info": {
+          "package_name": "com.example.tableflow"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB_S3e4pEZTIqBHA5Nn1d86E8EU80gFOwU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

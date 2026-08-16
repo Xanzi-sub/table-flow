@@ -214,9 +214,9 @@ The guest QR menu remains a normal web experience.
 
 Before a native release:
 
-1. Replace the documented placeholder `com.example.tableflow` in
-  `capacitor.config.ts` and the generated Android/iOS projects with your
-  registered reverse-domain identifier.
+1. The current Firebase Android development app uses `com.example.tableflow`.
+  Replace it in Firebase, `capacitor.config.ts`, Android and iOS with your
+  registered permanent reverse-domain identifier before any store release.
 2. Set `TABLEFLOW_APP_URL=https://your-production-domain` before running
   `npm run cap:sync`. Production must use HTTPS.
 3. Add Firebase's `google-services.json` to `android/app/` and configure the
@@ -242,9 +242,17 @@ Android uses the high-priority `tableflow_alerts` channel with default sound;
 iOS requests default APNs sound. Realtime foreground alerts use the staff sound
 toggle. Device silent/focus settings can still silence operating-system alerts.
 
+`android/app/google-services.json` is Firebase client configuration and may be
+committed. It does not contain the service-account private key. The downloaded
+service-account JSON and its `private_key` must remain outside the repository;
+its server values belong only in Supabase Edge Function secrets.
+
 Chrome on Android/desktop can also install TableFlow from its browser menu. The
 staff shell detects Chrome's `beforeinstallprompt` event and shows an Install
 TableFlow prompt only when the app is not already running in standalone mode.
+Building Android locally also requires Java 21 and the Android SDK. Android
+Studio normally installs both; set `JAVA_HOME` and `ANDROID_HOME`, or add an
+`android/local.properties` file containing `sdk.dir=C:\\path\\to\\Android\\Sdk`.
 On iPhone/iPad it shows Safari's Share > Add to Home Screen instructions.
 Dismissed prompts remain hidden for seven days.
 

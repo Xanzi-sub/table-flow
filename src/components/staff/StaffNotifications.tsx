@@ -159,9 +159,11 @@ export function NativePushBridge({ staffId, venueId }: { staffId: string; venueI
 export function StaffNotificationCentre({
   staffId,
   compact = false,
+  instanceId = "default",
 }: {
   staffId: string;
   compact?: boolean;
+  instanceId?: string;
 }) {
   const router = useRouter();
   const [notifications, setNotifications] = useState<StaffNotification[]>([]);
@@ -185,7 +187,7 @@ export function StaffNotificationCentre({
     void load().then(() => { initialized.current = true; });
     const supabase = createClient();
     const channel = supabase
-      .channel(`staff-notifications-${staffId}`)
+      .channel(`staff-notifications-${staffId}-${instanceId}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "staff_notifications", filter: `recipient_staff_id=eq.${staffId}` },
@@ -217,7 +219,7 @@ export function StaffNotificationCentre({
       )
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
-  }, [load, router, staffId]);
+  }, [instanceId, load, router, staffId]);
 
   async function markRead(notification: StaffNotification) {
     if (!notification.read_at) {

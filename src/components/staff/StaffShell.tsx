@@ -307,7 +307,7 @@ export function StaffShell({
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 xl:hidden">
         <VenueIdentity venueName={venueName} venueLogoUrl={venueLogoUrl} mobile />
         <div className="flex items-center gap-2">
-          <StaffNotificationCentre staffId={staffId} compact />
+          <StaffNotificationCentre staffId={staffId} compact instanceId="mobile" />
           {role === "waiter" && <DutyToggle staffId={staffId} isCheckedIn={isCheckedIn} compact onStatusChange={showToast} />}
           <button type="button" onClick={() => setNavOpen(true)} aria-label="Open navigation" className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50">
             <MenuIcon className="h-4 w-4" />
@@ -341,7 +341,7 @@ export function StaffShell({
           <div className="flex items-center gap-4">
             {role === "waiter" && <DutyToggle staffId={staffId} isCheckedIn={isCheckedIn} compact onStatusChange={showToast} />}
             <div className="h-5 w-px bg-slate-200" />
-            <StaffNotificationCentre staffId={staffId} compact />
+            <StaffNotificationCentre staffId={staffId} compact instanceId="desktop" />
             <UserAvatar displayName={displayName} compact />
             <div className="text-right"><p className="text-xs font-bold">{displayName}</p><p className="text-xs capitalize text-slate-500">{role}</p></div>
             <form action={signOutStaff}><button type="submit" className="text-xs font-semibold text-slate-500 hover:text-slate-900">Sign out</button></form>
